@@ -1,0 +1,406 @@
+#!/usr/bin/python
+
+'''
+	Interacts with Reddit's API
+	Dependent on Httpy.py, json
+'''
+
+from json  import loads
+from Httpy import Httpy
+from time  import sleep, time as timetime
+
+''' Base class for Reddit objects '''
+class Child(object):
+	def __init__(self, json=None, modhash=''):
+		self.id        = ''
+		self.subreddit = ''
+		self.created   = 0
+		self.author    = ''
+		self.ups       = 0
+		self.downs     = 0
+		self.modhash   = modhash
+		self.replies   = None
+		if json != None:
+			self.from_json(json)
+	def from_json(self, json):
+		self.id        = json['id'].rjust(6, '0')
+		self.subreddit = json['subreddit']
+		self.created   = json['created']
+		self.author    = json['author']
+		if 'ups' in json:   self.ups   = json['ups']
+		if 'downs' in json: self.downs = json['downs']
+		if 'replies' in json and type(json['replies']) == dict:
+			self.replies = []
+			for child in json['replies']['data']['children']:
+				if child['kind'] == 't1':
+					self.replies.append(Comment(child['data']))
+				elif child['kind'] == 't4':
+					self.replies.append(Message(child['data']))
+	def __str__(self):
+		return 'Reddit.%s(%s)' % (type(self).__name__, str(self.__dict__))
+	def __repr__(self):
+		return self.__str__()
+	def full_name(self):
+		if   type(self) == Message: t = 't4'
+		elif type(self) == Post:    t = 't3'
+		elif type(self) == Comment: t = 't1'
+		else: raise Exception('unknown type: %s' % str(type(self)))
+		return '%s_%s' % (t, self.id)
+	
+	# API methods below
+	def vote(self, direction=1):
+		if type(self) != Comment and type(self) != Post:
+			raise Exception('unable to vote on object of type %s' % str(type(self)))
+		d = {
+			'id'  : self.full_name(),
+			'dir' : str(direction),
+			'uh'  : self.modhash
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/vote', d)
+		if not r == '{}':
+			raise Exception('unexpected response: "%s"' % r)
+	def reply(self, body):
+		d = {
+			'api_type' : 'json',
+			'uh'       : self.modhash,
+			'text'     : body,
+			'thing_id' : self.full_name()
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/comment', d)
+		json = loads(r)['json']
+		if 'errors' in json and len(json['errors']) > 0:
+			raise Exception(str(json['errors']))
+		# Get id of reply, create new object, return it
+		full = json['data']['things'][0]['data']['id']
+		the_id = full.split('_')[1]
+		if full.startswith('t1'):
+			result = Comment()
+		elif full.startswith('t4'):
+			result = Message()
+		result.id        = the_id
+		result.modhash   = self.modhash
+		result.subreddit = self.subreddit
+		return result
+	def remove(self, mark_as_spam=False):
+		d = {
+			'id' : self.full_name(),
+			'uh' : self.modhash,
+			'spam' : str(mark_as_spam)
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/remove', d)
+		if not r == '{}':
+			raise Exception('unexpected response: "%s"' % r)
+	def approve(self):
+		d = {
+			'id' : self.full_name(),
+			'uh' : self.modhash
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/approve', d)
+		if not r == '{}':
+			raise Exception('unexpected response: "%s"' % r)
+	def distinguish(self, remove=False):
+		d = {
+			'api_type' : 'json',
+			'id' : self.full_name(),
+			'uh' : self.modhash,
+			'how' : 'no' if remove else 'yes'
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/distinguish', d)
+		if not 'errors": []' in r:
+			raise Exception('unexpected response: "%s"' % r)
+
+
+class Post(Child,object):
+	def __init__(self, json=None, modhash=''):
+		super(Post, self).__init__(json=json, modhash=modhash)
+		self.over_18  = False
+		self.url      = ''
+		self.selftext = None
+		self.title    = ''
+		if json != None:
+			self.from_json(json)
+	def from_json(self, json, modhash=''):
+		super(Post,self).from_json(json)
+		self.url       = Reddit.asciify(json['url'])
+		self.selftext  = Reddit.asciify(json['selftext']) if json['is_self'] else None
+		self.title     = Reddit.asciify(json['title'])
+	def permalink(self):
+		if self.subreddit != '':
+			return 'http://reddit.com/r/%s/comments/%s' % (self.subreddit, self.id)
+		else:
+			return 'http://reddit.com/comments/%s' % self.id
+	def flair(self, text):
+		d = {
+			'executed' : 'unmarked',
+			'spam' : 'False',
+			'name' : self.full_name(),
+			'flair_template_id' : '76a91748-1518-11e3-8669-12313b04c5c2',
+			'text' : text,
+			'link' : self.full_name(),
+			'id'   : '',
+			'r'    : self.subreddit,
+			'uh'   : self.modhash,
+			'renderstyle' : 'html'
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/selectflair', d)
+		print 'response:\n\n%s' % r
+
+class Comment(Child,object):
+	def __init__(self, json=None, modhash=''):
+		super(Comment, self).__init__(json=json, modhash=modhash)
+		self.body     = ''
+		self.post_id  = ''
+		if json != None:
+			self.from_json(json)
+	def from_json(self, json):
+		super(Comment,self).from_json(json)
+		self.body    = Reddit.asciify(json['body'])
+		if 'link_id' in json:
+			# Regular comment from a post
+			self.post_id = json['link_id']
+		elif 'context' in json:
+			# Comment from the 'messages' view
+			self.post_id = json['context'].split('/')[4]
+	def permalink(self):
+		if self.subreddit != '':
+			return 'http://reddit.com/r/%s/comments/%s/_/%s' % (self.subreddit, self.post_id.replace('t3_',''), self.id)
+		else:
+			return 'http://reddit.com/comments/%s/_/%s' % (self.post_id.replace('t3_',''), self.id)
+
+class Message(Child,object):
+	def __init__(self, json=None, modhash=''):
+		super(Message, self).__init__(json=json, modhash=modhash)
+		self.body     = ''
+		self.subject  = ''
+		self.new      = False
+		if json != None:
+			self.from_json(json)
+	def from_json(self, json):
+		super(Message,self).from_json(json)
+		self.body    = Reddit.asciify(json['body'])
+		self.subject = Reddit.asciify(json['subject'])
+		self.new     = json['new']
+	def permalink(self):
+		return 'http://reddit.com/message/messages/%s' % self.id
+	def mark_as_read(self):
+		d = {
+			'uh' : self.uh,
+			'id' : self.full_name()
+		}
+		r = self.web.post('http://www.reddit.com/api/read_message', d)
+		self.new = False
+
+class User(object):
+	def __init__(self, json=None):
+		self.name    = ''
+		self.created = 0
+		self.comm_karma = 0
+		self.link_karma = 0
+		if json != None:
+			self.name       =     json['name']
+			self.created    = int(json['created_utc'])
+			self.comm_karma =     json['comment_karma']
+			self.link_karma =     json['link_karma']
+
+''' Retrieve posts/comments from reddit '''
+class Reddit(object):
+	httpy = Httpy(user_agent='spambot by /u/4_pr0n, or contact admin@rarchives.com')
+	last_request = 0.0
+	modhash = ''
+	next_url = None
+
+	''' Safely convert Unicode to ASCII '''
+	@staticmethod
+	def asciify(text):
+		return text.encode('UTF-8').decode('ascii', 'ignore')
+
+	'''
+		Prevent API rate limiting.
+		Wait until more than 2 seconds have passed since last request was SENT
+	'''
+	@staticmethod
+	def wait():
+		now = float(timetime())
+		if now - Reddit.last_request < 2:
+			sleep(2 - (now - Reddit.last_request))
+		Reddit.last_request = float(timetime())
+
+	@staticmethod
+	def login(user, password):
+		Reddit.httpy.clear_cookies()
+		d = {
+				'user'   : user,
+				'passwd' : password,
+				'api_type' : 'json'
+			}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/login/%s' % user, d)
+		if 'WRONG_PASSWORD' in r:
+			raise Exception('login: invalid password')
+		if 'RATELIMIT' in r:
+			raise Exception('login: rate limit')
+		json = loads(r)
+		if not 'json' in json or not 'data' in json['json']:
+			raise Exception('login: failed: %s' % r)
+		# Logged in
+
+	'''
+		Get reddit page.
+		Returns a single Post object, or a list of Child-inheriting objects.
+	'''
+	@staticmethod
+	def get(url):
+		# Sanitize URL for API requests
+		if url.startswith('/'):
+			url = 'http://www.reddit.com%s' % url
+		if not 'json' in url.lower():
+			if '?' in url:
+				url = url.replace('?', '.json?', 1)
+			else:
+				url += '.json'
+		results = []
+		Reddit.wait()
+		try:
+			r = Reddit.httpy.get(url)
+			json = loads(r)
+		except Exception, e:
+			raise e
+		if type(json) == unicode:
+			raise Exception('empty response')
+		after = None
+		if type(json) == dict and 'after' in json['data']:
+			after = json['data']['after']
+		elif type(json) == list and len(json) > 0 and 'after' in json[0]['data']:
+			after = json[0]['data']['after']
+		if after != None:
+			sep = '?'
+			if '?' in url: sep = '&'
+			Reddit.next_url = '%s%safter=%s' % (url, sep, json['data']['after'])
+		else:
+			Reddit.next_url = None
+		return Reddit.parse_json(json)
+
+	''' Get 'next' reddit page. See get() '''
+	@staticmethod
+	def next():
+		if Reddit.next_url == None:
+			raise Exception('no next page to retrieve')
+		return Reddit.get(Reddit.next_url)
+
+	'''
+		Parses reddit response.
+		Returns either:
+			Post - if link is to a post
+			     - Comments will be contained within Post.replies
+			List of objects - if link is to a list (/new, /comments, /user/*)
+	'''
+	@staticmethod
+	def parse_json(json):
+		if type(json) == list:
+			modhash = json[0]['data']['modhash']
+			# First item is post
+			post = Post(json=json[0]['data']['children'][0]['data'], modhash=modhash)
+			# Other items are comment replies to post
+			post.replies = []
+			for child in json[1:]:
+				post.replies.extend(Reddit.parse_json(child))
+			return post
+		elif type(json) == dict:
+			modhash = json['data']['modhash']
+			result = []
+			for item in json['data']['children']:
+				if item['kind'] == 't3':
+					# Post
+					result.append(Post(json=item['data'], modhash=modhash))
+				elif item['kind'] == 't1':
+					# Comment
+					result.append(Comment(json=item['data'], modhash=modhash))
+				elif item['kind'] == 't4':
+					# Message
+					result.append(Message(json=item['data'], modhash=modhash))
+			return result
+		raise Exception('unable to parse:\n%s' % str(json))
+		
+	''' Returns list of URLs from given text (e.g. comment or selftext) '''
+	@staticmethod
+	def get_links_from_text(text):
+		urls = []
+		i = -1
+		while True:
+			i = text.find('://', i+1)
+			if i == -1: break
+			j = i
+			while j < len(text) and text[j] not in [')', ']', ' ', '"', '\n', '\t']:
+				j += 1
+			urls.append('http%s' % text[i:j])
+			i = j
+		return list(set(urls)) # Kill duplicates
+
+	@staticmethod
+	def get_user_info(user):
+		url = 'http://www.reddit.com/user/%s/about.json' % user
+		try:
+			Reddit.wait()
+			r = Reddit.httpy.get(url)
+			json = loads(r)
+		except Exception, e:
+			raise e
+		if not 'data' in json:
+			raise Exception('data not found at %s' % url)
+		data = json['data']
+		user_info = User(json=data)
+		return user_info
+
+	''' Recursively print replies '''
+	@staticmethod
+	def print_replies(replies, depth=''):
+		for i in xrange(0, len(replies)):
+			comment = replies[i]
+			print depth + '  \\_ "%s" -/u/%s' % (comment.body.replace('\n', ' '), comment.author)
+			if comment.replies != None and len(comment.replies) > 0:
+				more = '   '
+				if i < len(replies) - 1:
+					more = ' | '
+				Reddit.print_replies(comment.replies, depth=depth+more)
+	
+	@staticmethod
+	def accept_invite(subreddit, modhash):
+		d = {
+			'id' : '',
+			'r'  : subreddit,
+			'uh' : modhash,
+			'executed' : 'you are now a moderator. welcome to the team!',
+			'renderstyle' : 'html'
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
+		if r == '':
+			raise Exception('empty response when accepting invite to %s with modhash %s' % (subreddit, modhash))
+
+if __name__ == '__main__':
+	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json')
+	r = Reddit.get('/r/boltedontits/comments/1r9f6a/_/cdkxy92.json')
+	#r = Reddit.get('/r/boltedontits/comments/.json')
+	#r = Reddit.get('/user/4_pr0n.json')
+	#Reddit.login(user,pass)
+	#r = Reddit.get('/message/moderator/')
+	#r = Reddit.get('/message/inbox/')
+	if type(r) == Post:
+		print '"%s" by /u/%s' % (r.title, r.author)
+		Reddit.print_replies(r.replies)
+	elif type(r) == list:
+		for item in r:
+			if type(item) == Post:
+				print 'POST:    "%s" by /u/%s %s' % (item.title, item.author, item.modhash),
+			elif type(item) == Comment:
+				print 'COMMENT: /u/%s: "%s" %s' % (item.author, item.body.replace('\n', ' '), item.modhash),
+			elif type(item) == Message:
+				print 'MESSAGE: /u/%s: "%s" %s' % (item.author, item.permalink(), item.modhash),
+			print '(+%d/-%d)' % (item.ups, item.downs)
+
