@@ -327,21 +327,6 @@ class Reddit(object):
 			return result
 		raise Exception('unable to parse:\n%s' % str(json))
 		
-	''' Returns list of URLs from given text (e.g. comment or selftext) '''
-	@staticmethod
-	def get_links_from_text(text):
-		urls = []
-		i = -1
-		while True:
-			i = text.find('://', i+1)
-			if i == -1: break
-			j = i
-			while j < len(text) and text[j] not in [')', ']', ' ', '"', '\n', '\t']:
-				j += 1
-			urls.append('http%s' % text[i:j])
-			i = j
-		return list(set(urls)) # Kill duplicates
-
 	@staticmethod
 	def get_user_info(user):
 		url = 'http://www.reddit.com/user/%s/about.json' % user
@@ -382,13 +367,22 @@ class Reddit(object):
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
 		if r == '':
 			raise Exception('empty response when accepting invite to %s with modhash %s' % (subreddit, modhash))
+	
+	@staticmethod
+	def get_modded_subreddits():
+		Reddit.wait()
+		r = Reddit.httpy.get('http://reddit.com/r/mod')
+		if not '<ul><a href="http://www.reddit.com/r/' in r:
+			raise Exception('unable to find moderated subreddits')
+		return Reddit.httpy.between(r, '<ul><a href="http://www.reddit.com/r/', '"')[0].split('+')
 
 if __name__ == '__main__':
 	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json')
 	r = Reddit.get('/r/boltedontits/comments/1r9f6a/_/cdkxy92.json')
 	#r = Reddit.get('/r/boltedontits/comments/.json')
 	#r = Reddit.get('/user/4_pr0n.json')
-	#Reddit.login(user,pass)
+	#Reddit.login(user, pass)
+	#subs = Reddit.get_modded_subreddits()
 	#r = Reddit.get('/message/moderator/')
 	#r = Reddit.get('/message/inbox/')
 	if type(r) == Post:
@@ -403,4 +397,3 @@ if __name__ == '__main__':
 			elif type(item) == Message:
 				print 'MESSAGE: /u/%s: "%s" %s' % (item.author, item.permalink(), item.modhash),
 			print '(+%d/-%d)' % (item.ups, item.downs)
-
