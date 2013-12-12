@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from time import strftime, gmtime, sleep, time as timetime
-from os  import path, listdir
-from sys import stderr
+from os   import path
+from sys  import stderr
 
 try:                import sqlite3
 except ImportError: import sqlite as sqlite3
@@ -26,20 +26,31 @@ SCHEMA = {
 		'type     text,    \n\t' +
 		'text     text,    \n\t' +
 		'author   text,    \n\t' + 
-		'assister text,    \n\t' +
 		'count    integer, \n\t' +
 		'created  integer, \n\t' +
-		'ratings  integer, \n\t' +
-		'active   integer  \n\t',
+		'active   integer, \n\t' +
+		'isspam   integer  \n\t',
 
-	'removed' :
+	'log_removed' :
 		'\n\t' +
 		'filterid  integer, \n\t' +
 		'posttype  text,    \n\t' +
 		'permalink text,    \n\t' +
-		'url       text,    \n\t' +
 		'credit    text,    \n\t' +
 		'date      integer  \n\t',
+
+	'log_sourced' :
+		'\n\t' +
+		'album     text,    \n\t' +
+		'date      integer, \n\t' +
+		'permalink text     \n\t',
+	
+	'log_amateurarchives' :
+		'\n\t' +
+		'action    text,    \n\t' +
+		'permalink text,    \n\t' +
+		'date      integer, \n\t' +
+		'reason    text     \n\t',
 
 	'checked_albums' :
 		'\n\t' +
@@ -48,6 +59,14 @@ SCHEMA = {
 	'checked_posts' :
 		'\n\t' +
 		'postid text primary key \n\t',
+	
+	'blacklist_users' :
+		'\n\t' + 
+		'username text primary key \n\t',
+	
+	'blacklist_urls' :
+		'\n\t' +
+		'url text primary key \n\t',
 
 	'config' :
 		'\n\t' +
@@ -153,6 +172,12 @@ class DB:
 				WHERE %s
 			''' % where
 		return cur.execute(query, values)
+	
+	def select_one(self, what, table, where='', values=[]):
+		ex = self.select(what, table, where, values).fetchone()
+		if ex == None:
+			raise Exception('no rows returned')
+		return ex[0]
 
 	def delete(self, table, where, values=[]):
 		cur = self.conn.cursor()
@@ -160,6 +185,16 @@ class DB:
 			delete from %s
 				where %s
 			''' % (table, where)
+		cur.execute(query, values)
+		cur.close()
+	
+	def update(self, table, changes, where, values=[]):
+		cur = self.conn.cursor()
+		query = '''
+			update %s
+				set %s
+				where %s
+		''' % (table, changes, where)
 		cur.execute(query, values)
 		cur.close()
 
@@ -188,9 +223,6 @@ class DB:
 		result = execur.fetchone()
 		self.commit()
 		cur.close()
-
-	####################
-	# Unique to spambot
 
 if __name__ == '__main__':
 	db = DB()
