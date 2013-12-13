@@ -149,7 +149,6 @@ class Post(Child,object):
 		}
 		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/selectflair', d)
-		print 'response:\n\n%s' % r
 
 class Comment(Child,object):
 	def __init__(self, json=None, modhash=''):
@@ -242,12 +241,16 @@ class Reddit(object):
 		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/login/%s' % user, d)
 		if 'WRONG_PASSWORD' in r:
-			raise Exception('login: invalid password')
+			raise Exception('invalid password')
 		if 'RATELIMIT' in r:
-			raise Exception('login: rate limit')
+			json = loads(r)
+			errors = ''
+			if 'json' in json and 'errors' in json['json']:
+				errors = json['json']['errors']
+			raise Exception('rate limit: %s' % errors)
 		json = loads(r)
 		if not 'json' in json or not 'data' in json['json']:
-			raise Exception('login: failed: %s' % r)
+			raise Exception('failed: %s' % r)
 		# Logged in
 
 	'''
@@ -361,9 +364,6 @@ class Reddit(object):
 			'r'  : subreddit,
 			'uh' : modhash,
 			'executed' : 'you are now a moderator. welcome to the team!',
-			'renderstyle' : 'html'
-		}
-		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
 		if r == '':
 			raise Exception('empty response when accepting invite to %s with modhash %s' % (subreddit, modhash))
@@ -375,6 +375,51 @@ class Reddit(object):
 		if not '<ul><a href="http://www.reddit.com/r/' in r:
 			raise Exception('unable to find moderated subreddits')
 		return Reddit.httpy.between(r, '<ul><a href="http://www.reddit.com/r/', '"')[0].split('+')
+
+	@staticmethod
+	def get_blacklisted_users():
+		Reddit.wait()
+		r = Reddit.httpy.get('http://www.reddit.com/r/AmateurArchives/wiki/banned.json')
+		json = loads(r)
+		wiki = json['data']['content_md']
+		lines = wiki.split('\r\n')
+		blacklisted = []
+		for line in lines:
+			if not '|' in line:
+				print 'no | in "%s"' % line
+				continue
+			fields = line.split('|')
+			if len(fields) != 5:
+				print 'length != 5 : "%s"' % fields
+				continue
+			if fields[1] in ['username', ':--']:
+				print 'username or :-- in "%s"' % fields[1]
+				continue
+			blacklisted.extend(fields[1].replace('/u/', '').split('/'))
+		return blacklisted
+
+	@staticmethod
+	def get_blacklisted_urls():
+		Reddit.wait()
+		r = Reddit.httpy.get('http://www.reddit.com/r/AmateurArchives/wiki/illicit.json')
+		json = loads(r)
+		wiki = json['data']['content_md']
+		lines = wiki.split('\r\n')
+		blacklisted = []
+		for line in lines:
+			if not '|' in line:
+				print 'no | in "%s"' % line
+				continue
+			fields = line.split('|')
+			if len(fields) != 5:
+				print 'length != 5 : "%s"' % fields
+				continue
+			if fields[1] in ['username', ':--']:
+				print 'username or :-- in "%s"' % fields[1]
+				continue
+			blacklisted.extend(fields[1].replace('/u/', '').split('/'))
+		return blacklisted
+		
 
 if __name__ == '__main__':
 	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json')

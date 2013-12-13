@@ -4,10 +4,11 @@
 	Glue between reddit objects and the spam filter database
 '''
 
-from time     import gmtime, sleep
-from calendar import timegm
-from Reddit   import Post, Child
-from Httpy    import Httpy
+from time      import gmtime, sleep
+from calendar  import timegm
+from Reddit    import Post, Comment, Child
+from Httpy     import Httpy
+from traceback import format_exc
 
 class Filter(object):
 	ACTIONS = ['add', 'remove']
@@ -26,10 +27,12 @@ class Filter(object):
 			Returns:
 				Reddit-markdown'd response explaining what happened
 				empty string if no response is appropriate
+			Raises:
+				Exception if PM should not be replied to
 		'''
 		if db.count('admins', 'username = ?', [pm.author.lower()]) == 0:
 			# PM is not from an admin. ignore it.
-			return ''
+			raise Exception('PM was not from an admin: %s' % str(pm))
 
 		response = ''
 		for line in pm.body.split('\n'):
@@ -76,6 +79,8 @@ class Filter(object):
 				else:
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 					response += '[ **-** ] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
+		if response == '':
+			raise Exception('No response for PM: %s' % str(pm))
 		return response
 
 	@staticmethod
@@ -86,6 +91,8 @@ class Filter(object):
 				Tuple.
 				[0] is the id of the filter that applied in the 'filters' table
 				[1] is the user that gets the credit for the removal
+				[2] boolean, true:  post should be removed as spam,
+				             false: post should be removed as ham
 			Raises:
 				Exception if the post is NOT spam
 		'''
@@ -107,67 +114,122 @@ class Filter(object):
 			if 'imgur.com/a/' in url:
 				if db.count('checked_albums', 'url = ?', [url]) > 0:
 					continue # already checked
-				# Need to check for thumb spam
+				# Need to check album for spam links
 				httpy = Httpy()
-				r = httpy.get(url)
+				unicode_resp = httpy.get(url)
+				r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
 				db.insert('checked_albums', (url,) )
-				for (spamid, spamtext, credit) in db.select('id, text, author', 'filters', 'type = "thumb"'):
+				for (spamid, spamtext, credit, is_spam) in db.select('id, text, author, isspam', 'filters', 'type = "thumb" and active = 1'):
 					if spamtext in r:
-						return (spamid, credit)
+						return (spamid, credit, is_spam)
 				sleep(0.5)
 				
 		# Check if child's text/urls match any filters in the db
-		for (spamid, spamtype, spamtext, credit) in db.select('id, type, text, author', 'filters', 'active = 1'):
+		for (spamid, spamtype, spamtext, credit, is_spam) in db.select('id, type, text, author, isspam', 'filters', 'type != "thumb" and active = 1'):
+			is_spam = (is_spam == 1)
 			if spamtype == 'user' and child.author.lower() == spamtext.lower():
-				return (spamid, credit)
+				return (spamid, credit, is_spam)
 			elif spamtype == 'link':
 				for url in urls:
 					if spamtext.lower() in url.lower():
-						return (spamid, credit)
+						return (spamid, credit, is_spam)
 			elif spamtype == 'text':
 				if spamtext.lower() in text.lower():
-					return (spamid, credit)
+					return (spamid, credit, is_spam)
 			elif spamtype == 'tld':
 				for url in urls:
 					tld = url.lower().replace('http://', '').replace('https://', '').split('/')[0]
 					if '.' in tld: tld = tld[tld.rfind('.')+1:]
 					if tld.lower() == spamtext.lower():
-						return (spamid, credit)
+						return (spamid, credit, is_spam)
 			elif spamtype == 'tumblr':
 				for url in urls:
 					url = url.lower()
 					if '.tumblr.com' in url and not 'media.tumblr.com' in url:
-						return (spamid, credit)
+						return (spamid, credit, is_spam)
 			elif spamtype == 'blogspot':
 				for url in urls:
 					url = url.lower()
 					if '.blogspot.' in url and '.html' in url:
-						return (spamid, credit)
+						return (spamid, credit, is_spam)
 			
 		raise Exception('child was not detected as spam')
 
 	@staticmethod
-	def handle_child(child, db):
+	def handle_child(child, db, log):
 		'''
 			Checks if child is spam. If so, removes from reddit & updates DB.
+
+			Args:
+				child: Reddit object to check
+				db:    Database instance
+				log:   Logging function
+
+			Returns:
+				True if post hasn't been checked yet.
+				False if post has already been checked.
 		'''
 		if db.count('checked_posts', 'postid = ?', [child.id]) > 0:
 			# Already checked
-			return
+			return False
 		try:
-			(filterid, credit) = Filter.detect_spam(child, db)
-			# It's spam.
-			child.remove(mark_as_spam=True)
-			if   type(child) == Comment: posttype = 'comment'
-			elif type(child) == Post:    posttype = 'post'
-			db.insert('removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
-			db.update('filters', 'count = count + 1', 'filterid = ?', [filterid])
-			db.update('admins', 'score = score + 1', 'username = ?', [credit])
+			(filterid, credit, is_spam) = Filter.detect_spam(child, db)
+			# Needs to be removed
+			child.remove(mark_as_spam=is_spam)
+			now = timegm(gmtime())
+			(spamtype, spamtext, author, count) = db.select('type, text, author, count', 'filters', 'id = ?', [filterid]).fetchone()
+			if type(child) == Comment:
+				posttype = 'comment'
+				msg  = 'Filter.handle_child: Removing comment by /u/%s\n' % child.author
+				msg += '   Reason: Detected %s\'s %s filter "%s" (%d)\n' % (author, spamtype, spamtext, count)
+				msg += '     Body: %s\n' % child.body.replace('\n', ' ')[:50]
+			elif type(child) == Post:
+				posttype = 'post'
+				msg  = 'Filter.handle_child: Removing post by /u/%s\n' % child.author
+				msg += '   Reason: Detected %s\'s %s filter "%s" (%d)\n' % (author, spamtype, spamtext, count)
+				msg += '    Title: %s\n' % child.title.replace('\n', ' ')[:50]
+				if child.selftext != None:
+					msg += 'Self-text: %s\n' % child.selftext.replace('\n', ' ')[:50]
+				else:
+					msg += '      URL: %s\n' % child.url
+			msg += 'Permalink: %s\n' % child.permalink()
+			log(msg)
+			db.insert('log_removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
+			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
+			db.update('admins',  'score = score + 1', 'username = ?', [credit])
 			db.commit()
-		except:
+		except Exception, e:
 			# Not spam
-			pass
-		db.insert('checked_posts', (child.id))
+			if not 'was not detected' in str(e):
+				log('Exception: %s' % str(e))
+				log(format_exc())
+
+		db.insert('checked_posts', (child.id, ))
+		return True
+	
+	@staticmethod
+	def update_modded_subs(db, log):
+		'''
+			Retrieves list of moderated subreddits, updates database
+		'''
+		current = Reddit.get_modded_subreddits()
+		for ignore in db.get_config('ignore_subreddits').split(','):
+			if ignore in current:
+				current.remove(ignore)
+		if len(current) == 0: return # We expect at least one subreddit
+		existing = []
+		for (sub, ) in db.select('subreddit', 'subs_mod'):
+			if not sub in current:
+				log('Filter.update_modded_subs: deleting existing sub, no longer a mod: /r/%s' % sub)
+				db.delete('subs_mod', 'subreddit = ?', [sub])
+			else:
+				existing.append(sub)
+		for sub in current:
+			if not sub in existing:
+				log('Filter.update_modded_subs: adding new moderated sub: /r/%s' % sub)
+				db.insert('subs_mod', (sub, ) )
+		db.commit()
+
 
 	@staticmethod
 	def get_links_from_text(text):

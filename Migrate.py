@@ -148,15 +148,21 @@ for fil in listdir(logs):
 password = db.get_config('reddit_pw')
 print 'logging in...'
 Reddit.login('rarchives', password)
-print 'loading subs...'
-current = Reddit.get_modded_subreddits()
-print 'Reddit: found %d modded subs' % len(current)
 
+print 'loading blacklisted users...'
+users = Reddit.get_blacklisted_users()
+for user in users:
+	if db.count('blacklist_users', 'username = ?', [user]) == 0:
+		db.insert('blacklist_users', (user, ))
+		print 'inserted %s into blacklist_users' % user
+
+print 'loading modded subs...'
+current = Reddit.get_modded_subreddits()
+print 'found %d modded subs' % len(current)
 for ignore in db.get_config('ignore_subreddits').split(','):
 	if ignore in current:
 		print 'removing ignored subreddit: %s' % ignore
 		current.remove(ignore)
-
 existing = []
 for (sub, ) in db.select('subreddit', 'subs_mod'):
 	if not sub in current:
@@ -164,9 +170,9 @@ for (sub, ) in db.select('subreddit', 'subs_mod'):
 		db.delete('subs_mod', 'subreddit = ?', [sub])
 	else:
 		existing.append(sub)
-
 for sub in current:
 	if not sub in existing:
 		print 'inserting new sub into db: %s' % sub
 		db.insert('subs_mod', (sub, ) )
 db.commit()
+

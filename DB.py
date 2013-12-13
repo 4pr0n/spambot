@@ -45,7 +45,7 @@ SCHEMA = {
 		'date      integer, \n\t' +
 		'permalink text     \n\t',
 	
-	'log_amateurarchives' :
+	'log_amarch' :
 		'\n\t' +
 		'action    text,    \n\t' +
 		'permalink text,    \n\t' +
@@ -76,7 +76,9 @@ SCHEMA = {
 
 INDICES = {
 	'filters'     : 'created',
-	'removed'     : 'date',
+	'log_removed' : 'date',
+	'log_sourced' : 'date',
+	'log_amarch'  : 'date',
 	'subs_mod'    : 'subreddit',
 	'admins'      : 'username',
 	'subs_source' : 'subreddit',
