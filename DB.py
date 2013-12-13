@@ -19,6 +19,12 @@ SCHEMA = {
 	'subs_mod' :
 		'\n\t' +
 		'subreddit text unique \n\t',
+	
+	'subs_approved' :
+		'\n\t' +
+		'subreddit text, \n\t' +
+		'username  text, \n\t' +
+		'primary key(subreddit, username) \n\t',
 
 	'filters' :
 		'\n\t' +

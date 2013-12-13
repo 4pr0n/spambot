@@ -20,6 +20,8 @@ class Child(object):
 		self.downs     = 0
 		self.modhash   = modhash
 		self.replies   = None
+		self.banned_by   = None
+		self.approved_by = None
 		if json != None:
 			self.from_json(json)
 	def from_json(self, json):
@@ -36,6 +38,8 @@ class Child(object):
 					self.replies.append(Comment(child['data']))
 				elif child['kind'] == 't4':
 					self.replies.append(Message(child['data']))
+		if 'banned_by'   in json: self.banned_by   = json['banned_by']
+		if 'approved_by' in json: self.approved_by = json['approved_by']
 	def __str__(self):
 		return 'Reddit.%s(%s)' % (type(self).__name__, str(self.__dict__))
 	def __repr__(self):
@@ -364,6 +368,9 @@ class Reddit(object):
 			'r'  : subreddit,
 			'uh' : modhash,
 			'executed' : 'you are now a moderator. welcome to the team!',
+			'renderstyle' : 'html'
+		}
+		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
 		if r == '':
 			raise Exception('empty response when accepting invite to %s with modhash %s' % (subreddit, modhash))
@@ -386,16 +393,16 @@ class Reddit(object):
 		blacklisted = []
 		for line in lines:
 			if not '|' in line:
-				print 'no | in "%s"' % line
 				continue
 			fields = line.split('|')
 			if len(fields) != 5:
-				print 'length != 5 : "%s"' % fields
 				continue
 			if fields[1] in ['username', ':--']:
-				print 'username or :-- in "%s"' % fields[1]
 				continue
-			blacklisted.extend(fields[1].replace('/u/', '').split('/'))
+			for user in fields[1].replace('/u/', '').split('/'):
+				user = user.strip()
+				if user == '': continue
+				blacklisted.append(user)
 		return blacklisted
 
 	@staticmethod
@@ -408,17 +415,24 @@ class Reddit(object):
 		blacklisted = []
 		for line in lines:
 			if not '|' in line:
-				print 'no | in "%s"' % line
 				continue
 			fields = line.split('|')
 			if len(fields) != 5:
-				print 'length != 5 : "%s"' % fields
 				continue
 			if fields[1] in ['username', ':--']:
-				print 'username or :-- in "%s"' % fields[1]
 				continue
 			blacklisted.extend(fields[1].replace('/u/', '').split('/'))
 		return blacklisted
+
+	@staticmethod
+	def get_approved_submitters(subreddit):
+		Reddit.wait()
+		r = Reddit.get('/r/%s/about/contributors' % subreddit)
+		json = loads(r)
+		approved = []
+		for item in json['data']['children']:
+			approved.append(item['name'].lower())
+		return approved
 		
 
 if __name__ == '__main__':

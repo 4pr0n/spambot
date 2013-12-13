@@ -87,9 +87,10 @@ for line in open(path.join(logs, 'log.spamfilter'), 'r'):
 	datepst = line[1:line.find(']')].replace(' PST', '')
 	date = int(datetime.strptime(datepst, '%Y-%m-%d %H:%M:%S').strftime('%s'))
 	fields = line.split(' ')
-	credit = fields[3]
-	action = fields[4]
-	spamtype = fields[5]
+	if 'PST]' in fields: fields.remove('PST]')
+	credit = fields[2]
+	action = fields[3]
+	spamtype = fields[4]
 	if spamtype == 'word': spamtype = 'text'
 	spamtext = line[line.rfind('filter: "')+len('filter: "'):-1]
 	if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
@@ -104,6 +105,8 @@ for line in open(path.join(logs, 'log.spamfilter'), 'r'):
 		print 'removed %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
 db.commit()
 
+
+# Update counts on spam filters
 for line in open(path.join(lists, 'list.spamfilter'), 'r'):
 	line = line.strip()
 	(spamtype, credit, score, spamtext) = line.split('|')
@@ -134,13 +137,13 @@ for fil in listdir(logs):
 		spamtext = line[line.rfind(' "')+len(' "'):]
 		spamtext = spamtext[:spamtext.find('" in ')]
 		if spamtext in ['thumb-spam', 'tumblr-spam', 'spammy-TLD']: continue
-		if db.count('removed', 'permalink = ? and date = ?', [permalink, date]) == 0:
+		if db.count('log_removed', 'permalink = ? and date = ?', [permalink, date]) == 0:
 			result = db.select('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext]).fetchone()
 			if result == None:
 				#print 'no filter found for type %s, text "%s"' % (spamtype, spamtext)
 				continue
 			filterid = result[0]
-			db.insert('removed', (filterid, posttype, permalink, credit, date))
+			db.insert('log_removed', (filterid, posttype, permalink, credit, date))
 			print 'added removed %s: %s filter "%s" for %s at %d (%s)' % (posttype, spamtype, spamtext, credit, date, permalink)
 	db.commit()
 
@@ -176,3 +179,12 @@ for sub in current:
 		db.insert('subs_mod', (sub, ) )
 db.commit()
 
+'''
+# Approved submitters
+for sub in current:
+	print 'loading approved submitters for /r/%s' % sub
+	for user in Reddit.get_approved_submitters(sub):
+		if db.count('subs_approved', 'subreddit = ? and user = ?', [sub, user]) == 0:
+			db.insert('subs_approved', (sub, user))
+db.commit()
+'''

@@ -32,7 +32,7 @@ class Filter(object):
 		'''
 		if db.count('admins', 'username = ?', [pm.author.lower()]) == 0:
 			# PM is not from an admin. ignore it.
-			raise Exception('PM was not from an admin: %s' % str(pm))
+			raise Exception('Non-Admin PM: %s' % str(pm))
 
 		response = ''
 		for line in pm.body.split('\n'):
@@ -84,7 +84,7 @@ class Filter(object):
 		return response
 
 	@staticmethod
-	def detect_spam(child, db):
+	def detect_spam(child, db, log):
 		''' 
 			Detects if a reddit Child is spam.
 			Returns:
@@ -96,6 +96,14 @@ class Filter(object):
 			Raises:
 				Exception if the post is NOT spam
 		'''
+		# Check that the child is not already approved/banned
+		'''
+		if child.approved_by != None:
+			raise Exception('%s is approved by /u/%s' % (child.permalink(), child.approved_by))
+		if child.banned_by != None:
+			raise Exception('%s is already banned by /u/%s' % (child.permalink(), child.banned_by))
+		'''
+
 		# Get 'text' and 'urls' for a reddit child
 		if type(child) == Post:
 			text = child.title
@@ -116,12 +124,17 @@ class Filter(object):
 					continue # already checked
 				# Need to check album for spam links
 				httpy = Httpy()
-				unicode_resp = httpy.get(url)
-				r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
-				db.insert('checked_albums', (url,) )
-				for (spamid, spamtext, credit, is_spam) in db.select('id, text, author, isspam', 'filters', 'type = "thumb" and active = 1'):
-					if spamtext in r:
-						return (spamid, credit, is_spam)
+				try:
+					log('Filter.detect_spam: Checking %s for thumb-spam...' % url)
+					unicode_resp = httpy.get(url)
+					r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
+					db.insert('checked_albums', (url,) )
+					for (spamid, spamtext, credit, is_spam) in db.select('id, text, author, isspam', 'filters', 'type = "thumb" and active = 1'):
+						if spamtext in r:
+							return (spamid, credit, is_spam)
+				except Exception, e:
+					# Error while loading album (404?)
+					db.insert('checked_albums', (url,) )
 				sleep(0.5)
 				
 		# Check if child's text/urls match any filters in the db
@@ -173,7 +186,7 @@ class Filter(object):
 			# Already checked
 			return False
 		try:
-			(filterid, credit, is_spam) = Filter.detect_spam(child, db)
+			(filterid, credit, is_spam) = Filter.detect_spam(child, db, log)
 			# Needs to be removed
 			child.remove(mark_as_spam=is_spam)
 			now = timegm(gmtime())
@@ -197,7 +210,6 @@ class Filter(object):
 			db.insert('log_removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
 			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
 			db.update('admins',  'score = score + 1', 'username = ?', [credit])
-			db.commit()
 		except Exception, e:
 			# Not spam
 			if not 'was not detected' in str(e):
@@ -205,6 +217,7 @@ class Filter(object):
 				log(format_exc())
 
 		db.insert('checked_posts', (child.id, ))
+		db.commit()
 		return True
 	
 	@staticmethod
