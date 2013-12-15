@@ -14,6 +14,7 @@ class Filter(object):
 	ACTIONS = ['add', 'remove']
 	TYPES   = ['link', 'user', 'text', 'tld', 'thumb']
 
+
 	@staticmethod
 	def parse_pm(pm, db):
 		'''
@@ -61,7 +62,14 @@ class Filter(object):
 				continue
 
 			if action == 'add':
-				# Add to filter
+				# Request to add filter
+				try:
+					# Ensure the request is not crazy (tld: .com, url: imgur, etc)
+					Filter.sanity_check(db, spamtype, spamtext)
+				except Exception, e:
+					response += str(e)
+					continue
+				# Ensure filter does not already exist
 				if db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) > 0:
 					response += '[ **!** ] Unable to add filter: Filter already exists for %s filter "%s"\n\n' % (spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 0', [spamtype, spamtext]) > 0:
@@ -71,7 +79,7 @@ class Filter(object):
 					db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
 					response += '[ **+** ] Successfully added %s "%s" to the spam filter\n\n' % (spamtype, spamtext)
 			elif action == 'remove':
-				# Remove from filter
+				# Request to remove filter
 				if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
 					response += '[ **!** ] Unable to remove filter: Filter does not exist for %s filter "%s"\n\n' % (spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 1') == 0:
@@ -82,6 +90,19 @@ class Filter(object):
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
 		return response
+
+	@staticmethod
+	def sanity_check(db, spamtype, spamtext):
+		whitelist = []
+		if spamtype == 'link' or spamtype == 'text' or spamtype == 'thumb':
+			whitelist = ['reddit.com', 'imgur.com', 'min.us', 'minus.com']
+		elif spamtype == 'tld':
+			whitelist = ['com', 'net', 'org']
+		elif spamtype == 'user':
+			whitelist = [x[0] for x in db.select('username', 'admins').fetchall()]
+		for whitelisted in whitelist:
+			if whitelisted.lower() in spamtext.lower():
+				raise Exception('[ **!** ] Unable to add filter: Failed sanity test -- might remove relevant "%s" links' % whitelisted)
 
 	@staticmethod
 	def detect_spam(child, db, log):
@@ -97,12 +118,17 @@ class Filter(object):
 				Exception if the post is NOT spam
 		'''
 		# Check that the child is not already approved/banned
+		# TODO Uncomment for production use
 		'''
 		if child.approved_by != None:
 			raise Exception('%s is approved by /u/%s' % (child.permalink(), child.approved_by))
 		if child.banned_by != None:
 			raise Exception('%s is already banned by /u/%s' % (child.permalink(), child.banned_by))
 		'''
+
+		# Check if child author is an approved submitter/moderator
+		if db.count('subs_approved', 'subreddit = ? and username = ?', [child.subreddit, child.author]) > 0:
+			raise Exception('child was not detected as spam (Author is approved contributor)')
 
 		# Get 'text' and 'urls' for a reddit child
 		if type(child) == Post:
@@ -116,7 +142,7 @@ class Filter(object):
 		elif type(child) == Comment:
 			urls = Filter.get_links_from_text(child.body)
 			text = child.body
-		
+
 		# Thumb-spam check
 		for url in urls:
 			if 'imgur.com/a/' in url:
@@ -136,7 +162,7 @@ class Filter(object):
 					# Error while loading album (404?)
 					db.insert('checked_albums', (url,) )
 				sleep(0.5)
-				
+
 		# Check if child's text/urls match any filters in the db
 		for (spamid, spamtype, spamtext, credit, is_spam) in db.select('id, type, text, author, isspam', 'filters', 'type != "thumb" and active = 1'):
 			is_spam = (is_spam == 1)
@@ -165,8 +191,9 @@ class Filter(object):
 					url = url.lower()
 					if '.blogspot.' in url and '.html' in url:
 						return (spamid, credit, is_spam)
-			
+
 		raise Exception('child was not detected as spam')
+
 
 	@staticmethod
 	def handle_child(child, db, log):
@@ -186,6 +213,7 @@ class Filter(object):
 			# Already checked
 			return False
 		try:
+			# detect_spam will throw an exception if it does not detect the child as spam
 			(filterid, credit, is_spam) = Filter.detect_spam(child, db, log)
 			# Needs to be removed
 			child.remove(mark_as_spam=is_spam)
@@ -211,15 +239,16 @@ class Filter(object):
 			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
 			db.update('admins',  'score = score + 1', 'username = ?', [credit])
 		except Exception, e:
-			# Not spam
+			# Not spam, or something else went wrong
 			if not 'was not detected' in str(e):
-				log('Exception: %s' % str(e))
+				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
 
 		db.insert('checked_posts', (child.id, ))
 		db.commit()
 		return True
 	
+
 	@staticmethod
 	def update_modded_subs(db, log):
 		'''
@@ -242,6 +271,25 @@ class Filter(object):
 				log('Filter.update_modded_subs: adding new moderated sub: /r/%s' % sub)
 				db.insert('subs_mod', (sub, ) )
 		db.commit()
+
+	@staticmethod
+	def update_approved_submitters(subreddit):
+		count = 0
+		try:
+			for user in Reddit.get_approved_submitters(sub):
+				if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
+					db.insert('subs_approved', (sub, user))
+					count += 1
+		except: pass
+		try:
+			for user in Reddit.get_moderators(sub):
+				if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
+					db.insert('subs_approved', (sub, user))
+					count += 1
+			Bot.log('update_approved_submitters: Added %d contributors to /r/%s' % (count, subreddit))
+		except: pass
+		if count > 0:
+			db.commit()
 
 
 	@staticmethod
