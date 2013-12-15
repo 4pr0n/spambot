@@ -384,55 +384,31 @@ class Reddit(object):
 		return Reddit.httpy.between(r, '<ul><a href="http://www.reddit.com/r/', '"')[0].split('+')
 
 	@staticmethod
-	def get_blacklisted_users():
-		Reddit.wait()
-		r = Reddit.httpy.get('http://www.reddit.com/r/AmateurArchives/wiki/banned.json')
-		json = loads(r)
-		wiki = json['data']['content_md']
-		lines = wiki.split('\r\n')
-		blacklisted = []
-		for line in lines:
-			if not '|' in line:
-				continue
-			fields = line.split('|')
-			if len(fields) != 5:
-				continue
-			if fields[1] in ['username', ':--']:
-				continue
-			for user in fields[1].replace('/u/', '').split('/'):
-				user = user.strip()
-				if user == '': continue
-				blacklisted.append(user)
-		return blacklisted
-
-	@staticmethod
-	def get_blacklisted_urls():
-		Reddit.wait()
-		r = Reddit.httpy.get('http://www.reddit.com/r/AmateurArchives/wiki/illicit.json')
-		json = loads(r)
-		wiki = json['data']['content_md']
-		lines = wiki.split('\r\n')
-		blacklisted = []
-		for line in lines:
-			if not '|' in line:
-				continue
-			fields = line.split('|')
-			if len(fields) != 5:
-				continue
-			if fields[1] in ['username', ':--']:
-				continue
-			blacklisted.extend(fields[1].replace('/u/', '').split('/'))
-		return blacklisted
-
-	@staticmethod
 	def get_approved_submitters(subreddit):
+		'''
+			Returns list of approved submitters for a subreddit.
+			Requires: 'access' mod permissions, or for the sub to be private apparently
+		'''
 		Reddit.wait()
-		r = Reddit.get('/r/%s/about/contributors' % subreddit)
+		r = Reddit.httpy.get('http://www.reddit.com/r/%s/about/contributors.json' % subreddit)
 		json = loads(r)
 		approved = []
 		for item in json['data']['children']:
 			approved.append(item['name'].lower())
 		return approved
+
+	@staticmethod
+	def get_moderators(subreddit):
+		'''
+			Returns list of moderators for a subreddit.
+		'''
+		Reddit.wait()
+		r = Reddit.httpy.get('http://www.reddit.com/r/%s/about/moderators.json' % subreddit)
+		json = loads(r)
+		mods = []
+		for item in json['data']['children']:
+			mods.append(item['name'].lower())
+		return mods
 		
 
 if __name__ == '__main__':
