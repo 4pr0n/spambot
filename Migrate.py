@@ -8,15 +8,16 @@
 #sqlite3 spambot.db "insert into config values ( 'reddit_pw', password )"
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
 
-from DB import DB
-from Reddit import Reddit
-from time import gmtime
+from Reddit   import Reddit
+from DB       import DB
+from os       import path, listdir
+from time     import gmtime
 from calendar import timegm
 from datetime import datetime
-from os import path, listdir
 
-db = DB()
+db = DB() # Database instance
 
+# TLD Filters (hard-coded in old version)
 tlds = ['info', 'biz', 'cat', 'in', 'ru', 'me', 'hu', \
 		 'eu', 're', 'so', 'pl', 'lv', 'kz', 'ac', 'gl', 'im', \
 		 'bz', 'de', 'ly', 'gs', 'su', 'la', 'sh', 'mu', 'us', \
@@ -27,6 +28,7 @@ for tld in tlds:
 		db.insert('filters', (None, 'tld', tld, '', 0, 1369477831, 1, 1))
 db.commit()
 
+# Thumb-spam filters (hard-coded in old version)
 thumbs = ['hq gif',
 		'imgserve.net',
 		'cn-hd.org',
@@ -54,17 +56,22 @@ for thumb in thumbs:
 		db.insert('filters', (None, 'thumb', thumb, '', 0, 1375265101, 1, 1))
 db.commit()
 
-lists = '/Users/derv82/Sites/aabot/lists/'
-logs = '/Users/derv82/Sites/aabot/logs/'
+# Root of old version
+oldroot = open('oldbot.root', 'r').read().strip()
+lists = path.join(oldroot, 'lists')
+logs = path.join(oldroot, 'logs')
 
+# ADMINS
 for line in open(path.join(lists, 'list.admins'), 'r'):
 	line = line.strip().lower()
+	if line == '': continue
 	try:
-		db.insert('admins', (line, ) )
+		db.insert('admins', (line, 0, ) )
 		print 'added admin "%s"' % line
 	except: pass
 db.commit()
 
+# SUBS TO LOOK FOR & PROVIDE SOURCE
 for line in open(path.join(lists, 'list.subs.source'), 'r'):
 	line = line.strip()
 	try:
@@ -74,6 +81,7 @@ for line in open(path.join(lists, 'list.subs.source'), 'r'):
 db.commit()
 
 
+# MODERATED SUBREDDITS
 for line in open(path.join(logs, 'log.mod.subs'), 'r'):
 	line = line.strip()
 	try:
@@ -82,6 +90,7 @@ for line in open(path.join(logs, 'log.mod.subs'), 'r'):
 	except: pass
 db.commit()
 
+# SPAM FILTER (author, type, filter, date)
 for line in open(path.join(logs, 'log.spamfilter'), 'r'):
 	line = line.strip()
 	datepst = line[1:line.find(']')].replace(' PST', '')
@@ -106,7 +115,7 @@ for line in open(path.join(logs, 'log.spamfilter'), 'r'):
 db.commit()
 
 
-# Update counts on spam filters
+# SPAM FILTER (scores)
 for line in open(path.join(lists, 'list.spamfilter'), 'r'):
 	line = line.strip()
 	(spamtype, credit, score, spamtext) = line.split('|')
@@ -114,6 +123,7 @@ for line in open(path.join(lists, 'list.spamfilter'), 'r'):
 	print 'updated %s filter "%s" for %s with score %d' % (spamtype, spamtext, credit, int(score))
 db.commit()
 
+# REMOVED SPAM
 for fil in listdir(logs):
 	if fil != 'log.spam' and not fil.startswith('log.spam.'): continue
 	# pass
@@ -148,17 +158,12 @@ for fil in listdir(logs):
 	db.commit()
 
 
+# Login to reddit
 password = db.get_config('reddit_pw')
 print 'logging in...'
 Reddit.login('rarchives', password)
 
-print 'loading blacklisted users...'
-users = Reddit.get_blacklisted_users()
-for user in users:
-	if db.count('blacklist_users', 'username = ?', [user]) == 0:
-		db.insert('blacklist_users', (user, ))
-		print 'inserted %s into blacklist_users' % user
-
+# MODERATED SUBS (real-time)
 print 'loading modded subs...'
 current = Reddit.get_modded_subreddits()
 print 'found %d modded subs' % len(current)
@@ -179,12 +184,30 @@ for sub in current:
 		db.insert('subs_mod', (sub, ) )
 db.commit()
 
-'''
-# Approved submitters
+# APPROVED SUBMITTERS
 for sub in current:
-	print 'loading approved submitters for /r/%s' % sub
-	for user in Reddit.get_approved_submitters(sub):
-		if db.count('subs_approved', 'subreddit = ? and user = ?', [sub, user]) == 0:
-			db.insert('subs_approved', (sub, user))
-db.commit()
-'''
+	count = 0
+	try:
+		print 'loading approved submitters for /r/%s' % sub,
+		for user in Reddit.get_approved_submitters(sub):
+			if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
+				db.insert('subs_approved', (sub, user))
+				count += 1
+		print 'added %d contributors' % count
+		if count > 0:
+			db.commit()
+	except Exception, e:
+		print 'got exception: %s' % str(e)
+	# MODERATORS
+	try:
+		print 'loading moderators for /r/%s' % sub,
+		for user in Reddit.get_moderators(sub):
+			if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
+				db.insert('subs_approved', (sub, user))
+				count += 1
+		print 'added %d moderators' % count
+		if count > 0:
+			db.commit()
+	except Exception, e:
+		print 'got exception: %s' % str(e)
+
