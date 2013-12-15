@@ -1,8 +1,13 @@
 #!/usr/bin/python
 
+'''
+	Contains infinite loop for all spambot functions.
+'''
+
 from DB        import DB
 from Reddit    import Reddit
 from Filter    import Filter
+from AmArch    import AmArch
 from time      import strftime, gmtime
 from sys       import stderr, exit
 from traceback import format_exc
@@ -13,9 +18,17 @@ class Bot(object):
 	db = DB()
 	iterations = 0
 	logger = open('history.log', 'a')
+	amarch = None
 	
 	@staticmethod
 	def execute():
+		'''
+			Do one atomic operation.
+			Looks for spam posts/comments.
+			Might do other functions as well (depending on iteration #)
+			such as check for messages, update moderated subs, etc
+		'''
+		if Bot.amarch == None: Bot.amarch = AmArch(Reddit, Bot.db, Bot.log)
 		Bot.iterations += 1
 		it = Bot.iterations
 
@@ -29,12 +42,22 @@ class Bot(object):
 		#Bot.check_spam('/r/mod/comments', pages=pages)
 		Bot.check_spam('/r/4_pr0n/comments', pages=pages)
 
-		if it % 30 == 29:
+		if it % 60 == 58:
 			Bot.log('Updating moderated subreddits...')
 			Bot.update_modded_subreddits()
 
+		if it % 60 == 59:
+			Bot.amarch.execute()
+
 	@staticmethod
 	def check_messages():
+		'''
+			Checks for new messages, handles incoming messages
+
+			Returns:
+				true: New messages altered the database (added/removed filters)
+				false: No messages, or the messages were innocuous
+		'''
 		has_new_messages = False
 		last_pm_time = Bot.db.get_config('last_pm_time')
 		if last_pm_time == None:
@@ -58,6 +81,13 @@ class Bot(object):
 	
 	@staticmethod
 	def check_spam(url, pages=1):
+		'''
+			Looks for and handles spam found at url
+			
+			Args:
+				url: URL on reddit containing posts/comments
+				pages: Number of pages to view (loads 'next' page for pages-1 times)
+		'''
 		page = 0
 		Bot.log('Loading %s' % url)
 		posts = Reddit.get(url)
@@ -88,10 +118,13 @@ class Bot(object):
 			if not sub in existing:
 				Bot.db.insert('subs_mod', (sub, ) )
 		Bot.db.commit()
-		
 
 	@staticmethod
 	def log(txt):
+		'''
+			Logs text to history file and to stderr.
+			Includes timestamp and formatting
+		'''
 		tstamp = strftime('[%Y-%m-%dT%H:%M:%SZ] ', gmtime())
 		gap = ' ' * len(tstamp)
 		line = '%s%s' % (tstamp, txt.replace('\n', '\n%s' % gap))
