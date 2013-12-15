@@ -273,7 +273,7 @@ class Filter(object):
 		db.commit()
 
 	@staticmethod
-	def update_approved_submitters(subreddit):
+	def update_approved_submitters(subreddit, db, log):
 		count = 0
 		try:
 			for user in Reddit.get_approved_submitters(sub):
@@ -286,9 +286,9 @@ class Filter(object):
 				if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
 					db.insert('subs_approved', (sub, user))
 					count += 1
-			Bot.log('update_approved_submitters: Added %d contributors to /r/%s' % (count, subreddit))
 		except: pass
 		if count > 0:
+			log('Filter.update_approved_submitters: Added %d contributors to /r/%s' % (count, subreddit))
 			db.commit()
 
 
