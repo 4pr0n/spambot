@@ -81,6 +81,12 @@ for line in open(path.join(lists, 'list.subs.source'), 'r'):
 	except: pass
 db.commit()
 
+for sub in ['RealGirls', 'Amateur']:
+	try:
+		db.insert('subs_unreal', (sub,) )
+		print 'added sub "%s" for unreal checks' % sub
+	except: pass
+db.commit()
 
 # MODERATED SUBREDDITS
 for line in open(path.join(logs, 'log.mod.subs'), 'r'):
