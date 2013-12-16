@@ -7,6 +7,7 @@
 
 #sqlite3 spambot.db "insert into config values ( 'reddit_pw', password )"
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
+#sqlite3 spambot.db "insert into config values ( 'gw_api_url', url )"
 
 from Reddit   import Reddit
 from DB       import DB

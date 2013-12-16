@@ -73,10 +73,14 @@ class Filter(object):
 				if db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) > 0:
 					response += '[ **!** ] Unable to add filter: Filter already exists for %s filter "%s"\n\n' % (spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 0', [spamtype, spamtext]) > 0:
+					# Filter exists but is inactive (removed)
 					db.update('filters', 'active = 1', 'type = ? and text = ?', [spamtype, spamtext])
+					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
+					db.insert('log_filters', (filterid, pm.author, 'activate', timegm(gmtime())))
 					response += '[ **+** ] Successfully activated %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
-					db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
+					filterid = db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
+					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
 					response += '[ **+** ] Successfully added %s "%s" to the spam filter\n\n' % (spamtype, spamtext)
 			elif action == 'remove':
 				# Request to remove filter
@@ -86,6 +90,8 @@ class Filter(object):
 					response += '[ **!** ] Unable to remove filter: Filter is not active for %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
+					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
+					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
 					response += '[ **-** ] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
@@ -204,14 +210,7 @@ class Filter(object):
 				child: Reddit object to check
 				db:    Database instance
 				log:   Logging function
-
-			Returns:
-				True if post hasn't been checked yet.
-				False if post has already been checked.
 		'''
-		if db.count('checked_posts', 'postid = ?', [child.id]) > 0:
-			# Already checked
-			return False
 		try:
 			# detect_spam will throw an exception if it does not detect the child as spam
 			(filterid, credit, is_spam) = Filter.detect_spam(child, db, log)
@@ -244,10 +243,6 @@ class Filter(object):
 				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
 
-		db.insert('checked_posts', (child.id, ))
-		db.commit()
-		return True
-	
 
 	@staticmethod
 	def update_modded_subs(db, log):

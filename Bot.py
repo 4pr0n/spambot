@@ -18,8 +18,8 @@ class Bot(object):
 	db = DB()
 	iterations = 0
 	logger = open('history.log', 'a')
-	amarch = None
 	
+
 	@staticmethod
 	def execute():
 		'''
@@ -28,26 +28,35 @@ class Bot(object):
 			Might do other functions as well (depending on iteration #)
 			such as check for messages, update moderated subs, etc
 		'''
-		if Bot.amarch == None: Bot.amarch = AmArch(Reddit, Bot.db, Bot.log)
 		Bot.iterations += 1
 		it = Bot.iterations
 
 		pages = 1
 		if it % 5 == 1:
-			Bot.log('Checking messages...')
+			Bot.log('Bot.execute: Checking messages...')
 			if Bot.check_messages():
-				pages = PAGES_TO_REITERATE
+				# Got a PM to add/remove filter, need to look back further
+				pages = PAGES_TO_REITERATE 
 
-		#Bot.check_spam('/r/mod/new',      pages=pages)
-		#Bot.check_spam('/r/mod/comments', pages=pages)
-		Bot.check_spam('/r/4_pr0n/comments', pages=pages)
+		# Check posts and comments
+		# Removes spam and enforces AmateurArchives rules
+		Bot.handle_url('/r/mod/comments', pages=pages)
+		children = Bot.handle_url('/r/mod/new', pages=pages)
+
+		# 'children' contains all 'unchecked' posts
+		for child in children:
+			# Check for sources
+			Rarchives.handle_child(child, Bot.db, Bot.log)
+		del children
 
 		if it % 60 == 58:
-			Bot.log('Updating moderated subreddits...')
+			Bot.log('Bot.execute: Updating moderated subreddits...')
 			Bot.update_modded_subreddits()
 
 		if it % 60 == 59:
-			Bot.amarch.execute()
+			Bot.log('Bot.execute: Updating AmateurArchives...')
+			AmArch.execute()
+
 
 	@staticmethod
 	def check_messages():
@@ -78,15 +87,34 @@ class Bot(object):
 			Bot.db.set_config('last_pm_time', str(last_pm_time))
 			#msg.mark_as_read()
 		return has_new_messages
-	
+
+
 	@staticmethod
-	def check_spam(url, pages=1):
+	def handle_url(url, pages=1):
+		children = []
+		for child in Bot.get_content(url, pages=pages):
+			Filter.handle_child(child, Bot.db, Bot.log)
+			if db.count('checked_posts', 'postid = ?', [child.id]) == 0:
+				# Has not been checked yet
+				children.append(child)
+				AmArch.handle_child(child, Bot.db, Bot.log)
+				#Rarchives.handle_child(child, Bot.db, Bot.log)
+				Bot.db.insert('checked_posts', (child.id, ))
+				Bot.db.commit()
+		return children
+
+
+	@staticmethod
+	def get_content(url, pages=1):
 		'''
-			Looks for and handles spam found at url
+			Retrieves and iterates the posts/comments found at 'url'
 			
 			Args:
 				url: URL on reddit containing posts/comments
 				pages: Number of pages to view (loads 'next' page for pages-1 times)
+
+			Yields:
+				Each post or comment found at 'url'
 		'''
 		page = 0
 		Bot.log('Loading %s' % url)
@@ -94,13 +122,15 @@ class Bot(object):
 		while True:
 			page += 1
 			for post in posts:
+				yield post
 				Filter.handle_child(post, Bot.db, Bot.log)
 			if page < pages:
 				Bot.log('Loading %s (page %d)' % (url, page))
 				posts = Reddit.next()
 			else:
 				break
-	
+
+
 	@staticmethod
 	def update_modded_subreddits():
 		current = Reddit.get_modded_subreddits()
@@ -119,6 +149,7 @@ class Bot(object):
 				Bot.db.insert('subs_mod', (sub, ) )
 		Bot.db.commit()
 
+
 	@staticmethod
 	def log(txt):
 		'''
@@ -135,11 +166,11 @@ class Bot(object):
 
 
 if __name__ == '__main__':
-	Bot.log('Logging in...')
+	Bot.log('Bot.main: Logging in...')
 	Reddit.login('rarchives', Bot.db.get_config('reddit_pw'))
 	while True:
 		try:
 			Bot.execute()
 		except Exception, e:
-			Bot.log('Exception: %s' % str(e))
+			Bot.log('Bot.main: Exception: %s' % str(e))
 			Bot.log(format_exc())

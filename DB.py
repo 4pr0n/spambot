@@ -44,6 +44,13 @@ SCHEMA = {
 		'permalink text,    \n\t' +
 		'credit    text,    \n\t' +
 		'date      integer  \n\t',
+	
+	'log_filters' :
+		'\n\t' +
+		'filterid integer, \n\t' +
+		'user     text,    \n\t' +
+		'action   text,    \n\t' +
+		'date     integer  \n\t',
 
 	'log_sourced' :
 		'\n\t' +
@@ -61,15 +68,25 @@ SCHEMA = {
 	'checked_albums' :
 		'\n\t' +
 		'url text primary key \n\t',
-	
+
 	'checked_posts' :
 		'\n\t' +
 		'postid text primary key \n\t',
-	
+
+	'checked_sources' :
+		'\n\t' +
+		'postid text primary key \n\t',
+
+	'amarch_requests' :
+		'\n\t' +
+		'username  text primary key, \n\t' +
+		'date      integer, \n\t' +
+		'permalink text     \n\t',
+
 	'blacklist_users' :
 		'\n\t' + 
 		'username text primary key \n\t',
-	
+
 	'blacklist_urls' :
 		'\n\t' +
 		'url text primary key \n\t',
