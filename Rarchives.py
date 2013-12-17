@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 '''
-	Functions for interacting with the i.rarchives.com search site
+	Functions for interacting with the i.rarchives.com search site.
 '''
 
 from Reddit import Reddit, Child, Comment, Post
+from Httpy  import Httpy
 from json   import loads
 from time   import sleep
 
@@ -15,11 +16,18 @@ class Rarchives(object):
 
 	@staticmethod
 	def handle_child(child, db, log):
+		'''
+			Handles reddit child.
+			Checks and removes child if it should be (blacklisted, illicit, gonewild repost)
+			Returns:
+				True if child was removed for some reason
+				False otherwise
+		'''
 		# We only care about posts that have URLs (not self-text)
-		if type(child) != Post or child.url == None: return
+		if type(child) != Post or child.url == None: return False
 
-		# Check child's subreddit is in the list of 'subs_source'
-		if db.count('subs_source', 'subreddit like ?', [child.subreddit]) == 0: return
+		# Ensure the child's subreddit is in the list of subreddits to provide source in
+		if db.count('subs_source', 'subreddit like ?', [child.subreddit]) == 0: return False
 
 		# Get results from i.rarchives
 		try:
@@ -28,16 +36,12 @@ class Rarchives(object):
 			log('Rarchives.get_results: Exception: %s' % str(e))
 			return
 
-		# Remove blacklisted URLs
-		if Rarchives.blacklist_check(child, json, db, log): return
-
-		# Remove Gonewild posts not from original author
-		if Rarchives.gonewild_check(child, json, db, log): return
-
-		# TODO Check for 'unreal' posts in some subreddits
-		if Rarchives.unreal_check(child, json, db, log): return
-		# Provide source
-		Rarchives.provide_source(child, json, db, log)
+		# Do the thing, checking for removals first
+		if Rarchives.blacklist_check(child, json, db, log): return True
+		if Rarchives.gonewild_check (child, json, db, log): return True
+		if Rarchives.unreal_check   (child, json, db, log): return True
+		if Rarchives.provide_source (child, json, db, log): return True
+		return False
 	
 
 	@staticmethod
@@ -62,6 +66,10 @@ class Rarchives(object):
 
 	@staticmethod
 	def blacklist_check(child, json, db, log):
+		'''
+			Checks if child contains blacklisted url.
+			Removes if it does
+		'''
 		urls = []
 		for post in json['posts']:
 			urls.append(post['url'])
@@ -72,7 +80,9 @@ class Rarchives(object):
 		for (url,) in db.select('url'):
 			if url in urls:
 				# Image/album is blacklisted! Remove post
+				log('Rarchives.blacklist_check: Removed %s - matches %s' % (child.permalink(), url))
 				child.remove(remove_as_spam=False)
+				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'illicit content: %s' % url))
 				return True
 		return False
 
@@ -98,13 +108,15 @@ class Rarchives(object):
 			   post['author'].lower() != child.author.lower() and \
 				 post['author'] != '[deleted]':
 				# Child author is not the gonewild user, image *is* though
+				# Remove and comment the source
+				log('Rarchives.gonewild_check: Removed %s - matches /u/%s @ %s' % (child.permalink(), post['author'], post['permalink']))
 				child.remove(remove_as_spam=False)
-				# TODO Remove and comment the gonewild post['permalink'] and post['author'] if ! [deleted]
 				body = 'The post was removed because it is a repost of a /r/gonewild contributor.'
 				body += '* /u/%s submitted ["%s"](%s)' % (post['author'], post['title'], post['permalink'])
 				response = child.reply(body)
 				response.distinguish()
-				# TODO Update 'log_amarch' db table
+				# Update 'log_amarch' db table
+				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'gonewild repost of /u/%s: %s' % (post['author'], post['permalink'])))
 				return True
 		return False
 
@@ -124,19 +136,21 @@ class Rarchives(object):
 		'''
 		for post in json['posts'] + json['comments']:
 			if post['subreddit'].lower() != 'unrealgirls': continue
+			# Found matching result on UnrealGirls,
 			if db.count('subs_unreal', 'subreddit like ?', [post['subreddit']]) == 0: continue
-			# Found result on UnrealGirls, we're supposed to enforce that on this subreddit
-			# Remove and comment the unreal name & permalink
+			# And we're supposed to enforce that on this subreddit
+			log('Rarchives.unreal_check: Removed %s - matches %s' % (child.permalink(), post['permalink']))
 			child.remove(remove_as_spam=False)
 			title = post['title']
-			if '(' in title and ')' in title:
+			if '(' in title and ')' in title[title.find('(')+1:]:
 				title = title[title.find('(')+1:]
 				title = title[:title.rfind(')')]
 			body = '%s is "Unreal": ' % title
 			body += '\n\n* %s' % post['permalink']
 			response = child.reply(body)
 			response.distinguish()
-			# TODO Update 'log_amarch' db table
+			# Update 'log_amarch' db table
+			db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'unreal post: %s' % post['permalink']))
 			return True
 		return False
 
@@ -148,6 +162,14 @@ class Rarchives(object):
 				 post['subreddit'].lower() not in Rarchives.TRUSTED_SUBREDDITS or \
 				 'imgur.com/a/' not in post['url']:
 				continue
+			# Confirm the album still exists and contains at least 2 photos.
+			httpy = Httpy()
+			r = httpy.get(post['url'])
+			if not 'Album: ' in r:
+				return False
+			count = httpy.web.between(r, 'Album: ', ' ')[0].replace(',' '')
+			if not count.isdigit() or int(count) < 2:
+				return False
 			# Comment from trusted user/subreddit to imgur album. Looks legit.
 			# Construct comment & reply with post['url']
 			body  = '[album](%s) in [this ' % post['url']
@@ -157,8 +179,11 @@ class Rarchives(object):
 				body += 'comment'
 			body += '](%s) by /u/%s' % (post['permalink'], post['author'])
 			response = child.reply(body)
-			# TODO Update 'log_source' db table
-			return
+			# Update 'log_source' db table
+			log('Rarchives.provide_source: Post %s matches %s' % (child.permalink(), post['url']))
+			db.insert('log_sourced', (post['url'], timegm(gmtime()), child.permalink()))
+			return True
+		return False
 
 
 if __name__ == '__main__':
