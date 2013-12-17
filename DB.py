@@ -102,17 +102,23 @@ SCHEMA = {
 }
 
 INDICES = {
-	'filters'     : 'created',
-	'log_removed' : 'date',
-	'log_sourced' : 'date',
-	'log_amarch'  : 'date',
-	'subs_mod'    : 'subreddit',
-	'admins'      : 'username',
-	'subs_source' : 'subreddit',
-	'subs_mod'    : 'subreddit',
-	'config'      : 'key',
-	'checked_albums' : 'url',
-	'checked_posts'  : 'postid'
+	'admins'        : 'username',
+	'subs_source'   : 'subreddit',
+	'subs_mod'      : 'subreddit',
+	'subs_approved' : 'subreddit,username',
+	'subs_unreal'   : 'subreddit',
+	'filters'       : 'created',
+	'log_removed'   : 'date',
+	'log_filters'   : 'date',
+	'log_sourced'   : 'date',
+	'log_amarch'    : 'date',
+	'checked_albums'  : 'url',
+	'checked_posts'   : 'postid',
+	'checked_sources' : 'postid',
+	'amarch_requests' : 'username',
+	'blacklist_users' : 'username',
+	'blacklist_urls'  : 'url',
+	'config'        : 'key'
 }
 
 DB_FILE = 'spambot.db'
@@ -155,7 +161,7 @@ class DB:
 			create index 
 				if not exists 
 				%s_%s on %s(%s)
-		''' % (index, key, index, key)
+		''' % (index, key.replace(',', '_'), index, key)
 		cur.execute(query)
 		self.commit()
 		cur.close()

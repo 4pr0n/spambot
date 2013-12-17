@@ -124,13 +124,10 @@ class Filter(object):
 				Exception if the post is NOT spam
 		'''
 		# Check that the child is not already approved/banned
-		# TODO Uncomment for production use
-		'''
 		if child.approved_by != None:
 			raise Exception('%s is approved by /u/%s' % (child.permalink(), child.approved_by))
 		if child.banned_by != None:
 			raise Exception('%s is already banned by /u/%s' % (child.permalink(), child.banned_by))
-		'''
 
 		# Check if child author is an approved submitter/moderator
 		if db.count('subs_approved', 'subreddit = ? and username = ?', [child.subreddit, child.author]) > 0:
@@ -237,11 +234,15 @@ class Filter(object):
 			db.insert('log_removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
 			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
 			db.update('admins',  'score = score + 1', 'username = ?', [credit])
+			return True
 		except Exception, e:
 			# Not spam, or something else went wrong
-			if not 'was not detected' in str(e):
+			if not 'was not detected' in str(e) and \
+			   not 'approved by' in str(e) and \
+				 not 'banned by' in str(e):
 				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
+		return False
 
 
 	@staticmethod

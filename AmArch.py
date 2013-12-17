@@ -7,6 +7,7 @@
 from Reddit   import Reddit, Child, Comment, Post
 from calendar import timegm
 from time     import gmtime
+from json     import loads
 
 class AmArch(object):
 	
@@ -114,7 +115,7 @@ class AmArch(object):
 				post = Reddit.get(permalink)
 				if post.banned_by == None:
 					# Last request was < 7 days ago, wasn't removed
-					child.remove(remove_as_spam=False)
+					child.remove(mark_as_spam=False)
 					body = '''
 						## Rule: Requests must be at least 7 days apart
 
@@ -133,7 +134,7 @@ class AmArch(object):
 			# Check if user is < 30 days old
 			user = Reddit.get_user_info(child.author)
 			if user.created > now - (3600 * 24 * 30):
-				child.remove(remove_as_spam=False)
+				child.remove(mark_as_spam=False)
 				body = '''
 					## Rule: Requests must be from accounts more than 30 days old
 

@@ -5,11 +5,14 @@
 	from the old bot into the new database
 '''
 
+UNREAL_SUBS = ['4_pr0n', 'RealGirls', 'Amateur']
+
 #sqlite3 spambot.db "insert into config values ( 'reddit_pw', password )"
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
 #sqlite3 spambot.db "insert into config values ( 'gw_api_url', url )"
 
 from Reddit   import Reddit
+from AmArch   import AmArch
 from DB       import DB
 from os       import path, listdir
 from time     import gmtime
@@ -81,7 +84,7 @@ for line in open(path.join(lists, 'list.subs.source'), 'r'):
 	except: pass
 db.commit()
 
-for sub in ['RealGirls', 'Amateur']:
+for sub in UNREAL_SUBS:
 	try:
 		db.insert('subs_unreal', (sub,) )
 		print 'added sub "%s" for unreal checks' % sub
@@ -169,6 +172,10 @@ for fil in listdir(logs):
 password = db.get_config('reddit_pw')
 print 'logging in...'
 Reddit.login('rarchives', password)
+
+def log(txt): print txt
+print 'executing amarch...'
+AmArch.execute(db, log)
 
 # MODERATED SUBS (real-time)
 print 'loading modded subs...'

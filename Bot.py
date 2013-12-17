@@ -8,11 +8,13 @@ from DB        import DB
 from Reddit    import Reddit
 from Filter    import Filter
 from AmArch    import AmArch
+from Rarchives import Rarchives
 from time      import strftime, gmtime
 from sys       import stderr, exit
 from traceback import format_exc
 
-PAGES_TO_REITERATE = 5
+PAGES_TO_REITERATE = 1
+MOD_SUB = '4_pr0n', #'mod'
 
 class Bot(object):
 	db = DB()
@@ -32,7 +34,9 @@ class Bot(object):
 		it = Bot.iterations
 
 		pages = 1
-		if it % 5 == 1:
+		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
+
+		if False and it % 5 == 1:
 			Bot.log('Bot.execute: Checking messages...')
 			if Bot.check_messages():
 				# Got a PM to add/remove filter, need to look back further
@@ -40,8 +44,8 @@ class Bot(object):
 
 		# Check posts and comments
 		# Removes spam and enforces AmateurArchives rules
-		Bot.handle_url('/r/mod/comments', pages=pages)
-		children = Bot.handle_url('/r/mod/new', pages=pages)
+		Bot.handle_url('/r/%s/comments' % MOD_SUB, pages=pages)
+		children = Bot.handle_url('/r/%s/new' % MOD_SUB, pages=pages)
 
 		# 'children' contains all 'unchecked' posts
 		for child in children:
@@ -85,6 +89,7 @@ class Bot(object):
 				Bot.log('Bot.check_messages: %s' % str(e))
 			last_pm_time = msg.created
 			Bot.db.set_config('last_pm_time', str(last_pm_time))
+			# TODO Mark as unread
 			#msg.mark_as_read()
 		return has_new_messages
 
@@ -93,12 +98,13 @@ class Bot(object):
 	def handle_url(url, pages=1):
 		children = []
 		for child in Bot.get_content(url, pages=pages):
-			Filter.handle_child(child, Bot.db, Bot.log)
-			if db.count('checked_posts', 'postid = ?', [child.id]) == 0:
+			if Filter.handle_child(child, Bot.db, Bot.log):
+				# Filter removed the child for spam
+				continue
+			if Bot.db.count('checked_posts', 'postid = ?', [child.id]) == 0:
 				# Has not been checked yet
 				children.append(child)
 				AmArch.handle_child(child, Bot.db, Bot.log)
-				#Rarchives.handle_child(child, Bot.db, Bot.log)
 				Bot.db.insert('checked_posts', (child.id, ))
 				Bot.db.commit()
 		return children
@@ -123,7 +129,6 @@ class Bot(object):
 			page += 1
 			for post in posts:
 				yield post
-				Filter.handle_child(post, Bot.db, Bot.log)
 			if page < pages:
 				Bot.log('Loading %s (page %d)' % (url, page))
 				posts = Reddit.next()

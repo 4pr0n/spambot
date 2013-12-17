@@ -4,10 +4,11 @@
 	Functions for interacting with the i.rarchives.com search site.
 '''
 
-from Reddit import Reddit, Child, Comment, Post
-from Httpy  import Httpy
-from json   import loads
-from time   import sleep
+from Reddit   import Reddit, Child, Comment, Post
+from Httpy    import Httpy
+from json     import loads
+from time     import sleep, gmtime
+from calendar import timegm
 
 class Rarchives(object):
 	
@@ -31,9 +32,10 @@ class Rarchives(object):
 
 		# Get results from i.rarchives
 		try:
+			log('Rarchives.handle_child: Getting results for %s' % child.url)
 			json = Rarchives.get_results(child.url)
 		except Exception, e:
-			log('Rarchives.get_results: Exception: %s' % str(e))
+			log('Rarchives.get_results: Exception : %s\nwhen querying %s' % (str(e), child.url))
 			return
 
 		# Do the thing, checking for removals first
@@ -72,16 +74,16 @@ class Rarchives(object):
 		'''
 		urls = []
 		for post in json['posts']:
-			urls.append(post['url'])
-			urls.append(post['imageurl'])
+			if 'url' in post:      urls.append(post['url'])
+			if 'imageurl' in post: urls.append(post['imageurl'])
 		for comment in json['comments']:
-			urls.append(comment['url'])
-			urls.append(comment['imageurl'])
-		for (url,) in db.select('url'):
+			if 'url' in comment:      urls.append(comment['url'])
+			if 'imageurl' in comment: urls.append(comment['imageurl'])
+		for (url,) in db.select('url', 'blacklist_urls'):
 			if url in urls:
 				# Image/album is blacklisted! Remove post
 				log('Rarchives.blacklist_check: Removed %s - matches %s' % (child.permalink(), url))
-				child.remove(remove_as_spam=False)
+				child.remove(mark_as_spam=False)
 				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'illicit content: %s' % url))
 				return True
 		return False
@@ -110,11 +112,15 @@ class Rarchives(object):
 				# Child author is not the gonewild user, image *is* though
 				# Remove and comment the source
 				log('Rarchives.gonewild_check: Removed %s - matches /u/%s @ %s' % (child.permalink(), post['author'], post['permalink']))
-				child.remove(remove_as_spam=False)
-				body = 'The post was removed because it is a repost of a /r/gonewild contributor.'
-				body += '* /u/%s submitted ["%s"](%s)' % (post['author'], post['title'], post['permalink'])
-				response = child.reply(body)
-				response.distinguish()
+				child.remove(mark_as_spam=False)
+				title = post['title'].replace('[', '\\[').replace('(', '\\(').replace(']', '\\]').replace(')', '\\)')
+				body = 'The post was removed because it is a repost of a /r/gonewild submission:\n\n'
+				body += '* **/u/%s** submitted [*%s*](%s)' % (post['author'], title, post['permalink'])
+				try:
+					response = child.reply(body)
+					response.distinguish()
+				except Exception, e:
+					log('Rarchives.gonewild_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 				# Update 'log_amarch' db table
 				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'gonewild repost of /u/%s: %s' % (post['author'], post['permalink'])))
 				return True
@@ -137,18 +143,26 @@ class Rarchives(object):
 		for post in json['posts'] + json['comments']:
 			if post['subreddit'].lower() != 'unrealgirls': continue
 			# Found matching result on UnrealGirls,
-			if db.count('subs_unreal', 'subreddit like ?', [post['subreddit']]) == 0: continue
+			if db.count('subs_unreal', 'subreddit like ?', [child.subreddit]) == 0: continue
 			# And we're supposed to enforce that on this subreddit
 			log('Rarchives.unreal_check: Removed %s - matches %s' % (child.permalink(), post['permalink']))
-			child.remove(remove_as_spam=False)
+			child.remove(mark_as_spam=False)
 			title = post['title']
 			if '(' in title and ')' in title[title.find('(')+1:]:
 				title = title[title.find('(')+1:]
 				title = title[:title.rfind(')')]
-			body = '%s is "Unreal": ' % title
+				if title.lower() in ['photoshop', 'photoshopped']:
+					body = 'Photoshopped:'
+				else:
+					body = '*%s* is a professional model and/or celebrity:' % title
+			else:
+				body = '*%s*:' % title
 			body += '\n\n* %s' % post['permalink']
-			response = child.reply(body)
-			response.distinguish()
+			try:
+				response = child.reply(body)
+				response.distinguish()
+			except Exception, e:
+				log('Rarchives.unreal_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 			# Update 'log_amarch' db table
 			db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'unreal post: %s' % post['permalink']))
 			return True
@@ -157,28 +171,34 @@ class Rarchives(object):
 
 	@staticmethod
 	def provide_source(child, json, db, log):
+
+		# Count number of images in child album (if there is any)
+		child_album_count = 1 # Default to '1 image'
+		if 'imgur.com/a/' in child.url:
+			child_album_count = Rarchives.get_image_count_for_album(post['url'])
+
 		for post in json['posts'] + json['comments']:
 			if post['author'].lower()    not in Rarchives.TRUSTED_AUTHORS and \
 				 post['subreddit'].lower() not in Rarchives.TRUSTED_SUBREDDITS or \
 				 'imgur.com/a/' not in post['url']:
 				continue
-			# Confirm the album still exists and contains at least 2 photos.
-			httpy = Httpy()
-			r = httpy.get(post['url'])
-			if not 'Album: ' in r:
-				return False
-			count = httpy.web.between(r, 'Album: ', ' ')[0].replace(',' '')
-			if not count.isdigit() or int(count) < 2:
-				return False
+
+			# Confirm the album still exists and contains more photos than the child
+			if Rarchives.get_image_count_for_album(post['url']) <= child_album_count:
+				continue
+
 			# Comment from trusted user/subreddit to imgur album. Looks legit.
 			# Construct comment & reply with post['url']
-			body  = '[album](%s) in [this ' % post['url']
+			body  = '[**album**](%s) ^\[[**' % post['url']
 			if 'comments' in post:
 				body += 'post'
 			else:
 				body += 'comment'
-			body += '](%s) by /u/%s' % (post['permalink'], post['author'])
-			response = child.reply(body)
+			body += '**](%s) ^by ^/u/%s\]' % (post['permalink'], post['author'])
+			try:
+				response = child.reply(body)
+			except Exception, e:
+				log('Rarchives.provide_source: Error while replying to %s : %s' % (child.permalink(), str(e)))
 			# Update 'log_source' db table
 			log('Rarchives.provide_source: Post %s matches %s' % (child.permalink(), post['url']))
 			db.insert('log_sourced', (post['url'], timegm(gmtime()), child.permalink()))
@@ -186,6 +206,17 @@ class Rarchives(object):
 		return False
 
 
+	@staticmethod
+	def get_image_count_for_album(url):
+		httpy = Httpy()
+		r = httpy.get(url)
+		if not 'Album: ' in r: return 0
+		count = httpy.between(r, 'Album: ', ' ')[0].replace(',', '')
+		if not count.isdigit(): return 0
+		return int(count)
+
+
 if __name__ == '__main__':
-	print Rarchives.get_results('http://i.imgur.com/iHjXO.jpg')
+	print Rarchives.get_image_count_for_album('http://imgur.com/a/Feyrp')
+	#print Rarchives.get_results('http://i.imgur.com/iHjXO.jpg')
 	pass
