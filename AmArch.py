@@ -11,6 +11,8 @@ from json     import loads
 
 class AmArch(object):
 	
+	MINIMUM_REQUESTER_AGE = 30
+	MINIMUM_REQUEST_DAYS  = 7
 	@staticmethod
 	def handle_child(child, db, log):
 		'''
@@ -21,7 +23,7 @@ class AmArch(object):
 				True if post was removed for some reason.
 				False otherwise.
 		'''
-		if not child.subreddit.lower() == 'amateurarchives':
+		if child.subreddit.lower() not in ['amateurarchives', '4_pr0n']:
 			return False
 
 		# Remove posts mentioning blacklisted users
@@ -30,19 +32,20 @@ class AmArch(object):
 
 		# Detect request
 		if AmArch.is_post_request(child):
-			if not AmArch.valid_request(child, db, log):
+			if not AmArch.is_valid_request(child, db, log):
 				return True
-			# TODO Fulfill GW requests via new API
+			if AmArch.fulfill_user_request(child, db, log):
+				return True
 
-		pass
 
 	@staticmethod
 	def execute(db, log):
 		'''
-			Execute maintenance, update lists of blacklisted users/urls
+			Perform maintenance, update lists of blacklisted users/urls
 		'''
 		AmArch.update_blacklisted_users(db, log)
 		AmArch.update_blacklisted_urls (db, log)
+
 
 	@staticmethod
 	def check_for_blacklisted_user(child, db, log):
@@ -59,23 +62,33 @@ class AmArch(object):
 			if child.title    != None: txt += ' %s ' % child.title.lower()
 			if child.selftext != None: txt += ' %s ' % child.selftext.lower()
 		elif type(child) == Comment:
-			if child.body     != None: txt += ' %s ' % child.body.lower()
+			# XXX Not removing comments mentioning blacklisted users
+			return False
+			if db.count('subs_approved', 'subreddit like ? and username = ?', [child.subreddit, child.author]) > 0:
+				# Comment was from a mod/approved submitter, ignore
+				return False
+			if child.body != None: txt += ' %s ' % child.body.lower()
 			
 		for (user,) in db.select('username', 'blacklist_users'):
+
 			if user.lower() in txt:
 				child.remove(mark_as_spam=False)
 				if type(child) == Post:
-					body = '''
-						## Rule: Do not request blacklisted content
-
-						The user **%s** was detected in this post.
-
-						**%s** is in the list of [blacklisted users](/r/AmateurArchives/wiki/banned)
-					''' % (user, user)
+					body  = '## Rule: [Do not request blacklisted content](/r/AmateurArchives/about/sidebar)\n\n'
+					body += 'This post has been removed because it mentions **%s**.\n\n' % user
+					body += '**%s** is in the list of [**blacklisted users**](/r/AmateurArchives/wiki/banned).' % user
 					response = child.reply(body)
 					response.distinguish()
+					child.flair('Blacklisted %s' % user)
+					log('AmArch.check_for_blacklisted_user: Post requested /u/%s, removed: %s' % (user, child.permalink()))
+
+				elif type(child) == Comment:
+					child.remove(mark_as_spam=False)
+					log('AmArch.check_for_blacklisted_user: Comment requested /u/%s, removed: %s' % (user, child.permalink()))
+
 				return True
 		return False
+
 
 	@staticmethod
 	def is_post_request(child):
@@ -86,17 +99,18 @@ class AmArch(object):
 				True if post is request, False otherwise
 		'''
 		if type(child) != Post: return False
-		phrases = ['u/', 'request', 'anyone', 'any one', 'anymore', 'any more', 'have more', 'has more']
+		phrases = ['u/', 'request', 'anyone', 'any one', 'anymore', 'any more', 'have more', 'has more', 'got more', 'moar']
 		for phrase in phrases:
 			if phrase in child.title.lower():
 				return True
 		return False
 
+
 	@staticmethod
 	def is_valid_request(child, db, log):
 		'''
-			Ensures request is from an account older than 30 days,
-			and the accounts last request was over 7 days ago.
+			Ensures request is from an account older than MINIMUM_REQUESTER_AGE days,
+			and the accounts last request was over MINIMUM_REQUEST_DAYS days ago.
 			If not, removes the request and comments with the reason for removal
 
 			Returns:
@@ -107,48 +121,47 @@ class AmArch(object):
 
 		request_is_valid = False
 
-		# Check if last request was < 7 days ago
+		# Check if last request was < MINIMUM_REQUEST_DAYS days ago
 		now = timegm(gmtime())
 		for (date, permalink) in db.select('date, permalink', 'amarch_requests', 'username = ?', [child.author]):
-			if date + (3600 * 24 * 7) > now:
-				# Last request was < 7 days ago, check if the request was 'removed'
+			if date + (3600 * 24 * AmArch.MINIMUM_REQUEST_DAYS) > now:
+				# Last request was < MINIMUM_REQUEST_DAYS days ago, check if the request was 'removed'
 				post = Reddit.get(permalink)
 				if post.banned_by == None:
-					# Last request was < 7 days ago, wasn't removed
+					# Last request was < MINIMUM_REQUEST_DAYS days ago, wasn't removed
 					child.remove(mark_as_spam=False)
-					body = '''
-						## Rule: Requests must be at least 7 days apart
-
-						Your [last request](%s) was less than 7 days ago.
-					''' % permalink
+					log('AmArch.is_valid_request: Request < %d days old: %s' % (AmArch.MINIMUM_REQUEST_DAYS, child.permalink()))
+					body  = '## Rule: [Requests must be at least %d days apart](/r/AmateurArchives/about/sidebar)\n\n' % AmArch.MINIMUM_REQUEST_DAYS
+					body += 'The [**last request**](%s) from your account was submitted %s' % (permalink, Reddit.utc_timestamp_to_hr(post.created))
 					response = child.reply(body)
 					response.distinguish()
+					child.flair('last req < %dd' % AmArch.MINIMUM_REQUEST_DAYS)
 					return False
 				else:
 					# XXX OPTIMIZATION
-					# Last request was > 7 days ago and wasn't removed
-					# Therefore: User account must be > 30 days old
+					# Last request was > MINIMUM_REQUEST_DAYS days ago but was removed
+					# Therefore: User account must be > MINIMUM_REQUESTER_AGE days old
 					request_is_valid = True
 
 		if not request_is_valid:
-			# Check if user is < 30 days old
+			# Check if user is < MINIMUM_REQUESTER_AGE days old
 			user = Reddit.get_user_info(child.author)
-			if user.created > now - (3600 * 24 * 30):
+			if user.created > now - (3600 * 24 * AmArch.MINIMUM_REQUESTER_AGE):
 				child.remove(mark_as_spam=False)
-				body = '''
-					## Rule: Requests must be from accounts more than 30 days old
-
-					Your account (/u/%s) is less than 30 days old.
-				''' % child.author
+				log('AmArch.is_valid_request: Requester /u/%s < %d days old: %s' % (child.author, AmArch.MINIMUM_REQUESTER_AGE, child.permalink()))
+				body  = '## Rule: [Requests must be from accounts more than %d days old](/r/AmateurArchives/about/sidebar)\n\n' % AmArch.MINIMUM_REQUESTER_AGE
+				body += 'The account (/u/%s) was created %s.' % (child.author, Reddit.utc_timestamp_to_hr(user.created))
 				response = child.reply(body)
 				response.distinguish()
+				child.flair('user < %dd' % AmArch.MINIMUM_REQUESTER_AGE)
 				return False
 
 		# Request is valid. Add it to the database for checking in the future
+		log('AmArch.is_valid_request: Allowing request from /u/%s' % child.author)
 		if db.count('amarch_requests', 'username = ?', [child.author]) == 0:
-			db.insert('amarch_requests', (child.author, child.date, child.permalink()))
+			db.insert('amarch_requests', (child.author, child.created, child.permalink()))
 		else:
-			db.update('amarch_requests', 'date = ?, permalink = ?', 'username = ?', [child.date, child.permalink(), child.author])
+			db.update('amarch_requests', 'date = ?, permalink = ?', 'username = ?', [child.created, child.permalink(), child.author])
 		return True
 
 
@@ -162,14 +175,16 @@ class AmArch(object):
 		try:
 			users = AmArch.get_blacklisted_users()
 		except Exception, e:
-			log('AmArch.update_blacklisted_users: Got excpetion: %s' % str(e))
+			log('AmArch.update_blacklisted_users: Got exception: %s' % str(e))
 			return
 		for user in users:
+			if user.strip() == '': continue
 			if db.count('blacklist_users', 'username = ?', [user]) == 0:
 				db.insert('blacklist_users', (user, ))
 				count += 1
 				log('AmArch.update_blacklisted_user: Added "%s"' % user)
 		db.commit()
+
 
 	@staticmethod
 	def get_blacklisted_users():
@@ -218,6 +233,7 @@ class AmArch(object):
 				log('AmArch.update_blacklisted_urls: Added: %s' % url)
 		db.commit()
 
+
 	@staticmethod
 	def get_blacklisted_urls():
 		'''
@@ -236,6 +252,49 @@ class AmArch(object):
 			url = 'http://%s' % url
 			illicit.append(url)
 		return illicit
+
+
+	@staticmethod
+	def fulfill_user_request(child, db, log):
+		if not 'u/' in child.title: return False
+
+		# Get user
+		# TODO Handle multiple users
+		title = child.title[child.title.find('u/')+2:]
+		user = ''
+		for char in title:
+			if char.lower() not in 'abcdefghijklmnopqrstuvwxyz0123456789_-': break
+			user += char
+		if len(user) < 3: return False
+
+		# Get GW API url
+		api_url = db.get_config('gw_api_url')
+		api_url += user
+
+		# Send request
+		log('AmArch.fulfill_user_request: Fulfilling /u/%s via %s' % (user, api_url))
+		try:
+			r = Reddit.httpy.get(api_url)
+			json = loads(r)
+		except Exception, e:
+			log('AmArch.fulfill_user_request: Error fulfilling /u/%s: Exception: %s\n' % (user, str(e)))
+
+		if 'error' in json: 
+			log('AmArch.fulfill_user_request: Error fulfilling /u/%s: %s' % (user, json['error']))
+			return False
+		if 'count' not in json or \
+		   'url'   not in json or \
+			 'zip'   not in json:
+			log('AmArch.fulfill_user_request: Error fulfilling /u/%s: Missing info in response:\n' % (user, r))
+			return False
+
+		# Reply to child with it
+		body = '[**album**](%s) / [**zip**](%s) ^[%d ^pics]' % (json['url'], json['zip'], json['count'])
+		child.reply(body)
+		child.flair('Bot-Fulfilled (%d)' % json['count'])
+		log('AmArch.fulfill_user_request: Fulfilled /u/%s: %s' % (user, child.permalink()))
+		return True
+
 
 if __name__ == '__main__':
 	pass
