@@ -111,14 +111,15 @@ class Rarchives(object):
 				 post['author'] != '[deleted]':
 				# Child author is not the gonewild user, image *is* though
 				# Remove and comment the source
-				log('Rarchives.gonewild_check: Removed %s - matches /u/%s @ %s' % (child.permalink(), post['author'], post['permalink']))
 				child.remove(mark_as_spam=False)
-				title = post['title'].replace('[', '\\[').replace('(', '\\(').replace(']', '\\]').replace(')', '\\)')
-				body = 'The post was removed because it is a repost of a /r/gonewild submission:\n\n'
-				body += '* **/u/%s** submitted [*%s*](%s)' % (post['author'], title, post['permalink'])
+				log('Rarchives.gonewild_check: Removed %s - matches /u/%s @ http://reddit.com%s' % (child.permalink(), post['author'], post['permalink']))
+				title = post['title'].replace('[', '\\[').replace('(', '\\(').replace(']', '\\]').replace(')', '\\)').replace('*', '')
+				body = '## This post was removed because it is a repost of a /r/gonewild submission:\n\n'
+				body += '* **/u/%s** submitted [*%s*](%s) %s' % (post['author'], title, post['permalink'], Reddit.utc_timestamp_to_hr(post['created']))
 				try:
 					response = child.reply(body)
 					response.distinguish()
+					child.flair('Removed/Gonewild')
 				except Exception, e:
 					log('Rarchives.gonewild_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 				# Update 'log_amarch' db table
@@ -161,6 +162,7 @@ class Rarchives(object):
 			try:
 				response = child.reply(body)
 				response.distinguish()
+				child.flair('Removed/Unreal')
 			except Exception, e:
 				log('Rarchives.unreal_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 			# Update 'log_amarch' db table
