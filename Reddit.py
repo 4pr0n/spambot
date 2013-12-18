@@ -5,9 +5,10 @@
 	Dependent on Httpy.py, json
 '''
 
-from json  import loads
-from Httpy import Httpy
-from time  import sleep, time as timetime
+from json     import loads
+from Httpy    import Httpy
+from time     import sleep, time as timetime, gmtime
+from calendar import timegm
 
 ''' Base class for Reddit objects '''
 class Child(object):
@@ -27,7 +28,7 @@ class Child(object):
 	def from_json(self, json):
 		self.id        = json['id'].rjust(6, '0')
 		self.subreddit = json['subreddit']
-		self.created   = json['created']
+		self.created   = json['created_utc']
 		self.author    = json['author']
 		if 'ups' in json:   self.ups   = json['ups']
 		if 'downs' in json: self.downs = json['downs']
@@ -409,7 +410,54 @@ class Reddit(object):
 		for item in json['data']['children']:
 			mods.append(item['name'].lower())
 		return mods
-		
+
+	@staticmethod
+	def utc_timestamp_to_hr(tstamp):
+		'''
+			Subtracts timestamp from current time (in GMT) and returns difference
+			in a human-readable ("HR") format.
+
+			Examples:
+				> utc_timestamp_to_hr(138103491)
+				> 3 days ago
+				> utc_timestamp_to_hr(148103491)
+				> 5 days from now
+
+			Args:
+				tstamp: Timestamp in seconds since epoch, UTC-timezoned
+
+			Returns:
+				Human-readable difference between timestamp and now
+		'''
+		units = [
+				(31536000, 'year'  ),
+				(2592000,  'month' ),
+				(2592000,  'month' ),
+				(86400,    'day'   ),
+				(3600,     'hour'  ),
+				(60,       'minute'),
+				(1,        'second')
+			]
+
+		# Calculate difference
+		diff = timegm(gmtime()) - tstamp
+		if diff == 0: return 'now'
+		in_future = (diff < 0)
+		diff = abs(diff)
+
+		hr_time = '?'
+		for (secs, label) in units:
+			if diff >= secs:
+				parsecs = diff / secs
+				hr_time = '%d %s%s %s' % (\
+						parsecs, \
+						label, \
+						'' if parsecs == 1 else 's', \
+						'from now' if in_future else 'ago'\
+					)
+				break
+		return hr_time
+
 
 if __name__ == '__main__':
 	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json')
