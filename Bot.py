@@ -14,7 +14,7 @@ from sys       import stderr, exit
 from traceback import format_exc
 
 PAGES_TO_REITERATE = 1
-MOD_SUB = '4_pr0n', #'mod'
+MOD_SUB = '4_pr0n', #'mod' # TODO Change back to 'mod'
 
 class Bot(object):
 	db = DB()
@@ -36,6 +36,7 @@ class Bot(object):
 		pages = 1
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
 
+		# TODO Allow checking comments
 		if False and it % 5 == 1:
 			Bot.log('Bot.execute: Checking messages...')
 			if Bot.check_messages():

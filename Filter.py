@@ -195,6 +195,7 @@ class Filter(object):
 					if '.blogspot.' in url and '.html' in url:
 						return (spamid, credit, is_spam)
 
+		# TODO whois filter (use external service?)
 		raise Exception('child was not detected as spam')
 
 
