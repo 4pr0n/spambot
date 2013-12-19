@@ -5,11 +5,20 @@
 	from the old bot into the new database
 '''
 
-UNREAL_SUBS = ['4_pr0n', 'RealGirls', 'Amateur']
-
+# Commands for injecting necessary values into DB:
 #sqlite3 spambot.db "insert into config values ( 'reddit_pw', password )"
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
 #sqlite3 spambot.db "insert into config values ( 'gw_api_url', url )"
+
+# TODO Remove /r/4_pr0n
+UNREAL_SUBS = ['4_pr0n', 'RealGirls', 'Amateur']
+
+CUSTOM_FILTERS = ['tumblr', 'blogspot']
+
+# Root of old version
+oldroot = open('oldbot.root', 'r').read().strip()
+lists = path.join(oldroot, 'lists')
+logs = path.join(oldroot, 'logs')
 
 from Reddit   import Reddit
 from AmArch   import AmArch
@@ -22,11 +31,11 @@ from datetime import datetime
 db = DB() # Database instance
 
 # TLD Filters (hard-coded in old version)
-tlds = ['info', 'biz', 'cat', 'in', 'ru', 'me', 'hu', \
-		 'eu', 're', 'so', 'pl', 'lv', 'kz', 'ac', 'gl', 'im', \
-		 'bz', 'de', 'ly', 'gs', 'su', 'la', 'sh', 'mu', 'us', \
-		 'cz', 'mx', 'cc', 'tk', 'ws', 'tw', 'ae', 'at', 'pw', \
-		 'dk']
+tlds = ['info', 'biz', 'cat',   'in', 'ru', 'me', 'hu', \
+        'eu', 're', 'so', 'pl', 'lv', 'kz', 'ac', 'gl', 'im', \
+        'bz', 'de', 'ly', 'gs', 'su', 'la', 'sh', 'mu', 'us', \
+        'cz', 'mx', 'cc', 'tk', 'ws', 'tw', 'ae', 'at', 'pw', \
+        'dk']
 for tld in tlds:
 	if db.count('filters', 'type = "tld" and text = ?', [tld]) == 0:
 		db.insert('filters', (None, 'tld', tld, '', 0, 1369477831, 1, 1))
@@ -34,36 +43,36 @@ db.commit()
 
 # Thumb-spam filters (hard-coded in old version)
 thumbs = ['hq gif',
-		'imgserve.net',
-		'cn-hd.org',
-		'exgirlfriend-photos.com',
-		'pornstr8.com',
-		'sexvideogif.com',
-		'niceandquite.com',
-		'selfshot.us',
-		'.tumblr.com/',
-		'dailynsfwhd.com',
-		'imgtiger.com',
-		'selfpicamateurs',
-		'amateurdump.info',
-		'click below',
-		'assno1.com',
-		'gifsfor.com',
-		'xxxbunker.com',
-		'teenxxxtubes.com',
-		'classybro',
-		'porn.com/',
-		'raxionmedia',
-		'vipescorts']
+          'imgserve.net',
+          'cn-hd.org',
+          'exgirlfriend-photos.com',
+          'pornstr8.com',
+          'sexvideogif.com',
+          'niceandquite.com',
+          'selfshot.us',
+          '.tumblr.com/',
+          'dailynsfwhd.com',
+          'imgtiger.com',
+          'selfpicamateurs',
+          'amateurdump.info',
+          'click below',
+          'assno1.com',
+          'gifsfor.com',
+          'xxxbunker.com',
+          'teenxxxtubes.com',
+          'classybro',
+          'porn.com/',
+          'raxionmedia',
+          'vipescorts']
 for thumb in thumbs:
 	if db.count('filters', 'type = "thumb" and text = ?', [thumb]) == 0:
 		db.insert('filters', (None, 'thumb', thumb, '', 0, 1375265101, 1, 1))
 db.commit()
 
-# Root of old version
-oldroot = open('oldbot.root', 'r').read().strip()
-lists = path.join(oldroot, 'lists')
-logs = path.join(oldroot, 'logs')
+# CUSTOM FILTERS (tumblr, blogspot)
+for custom in CUSTOM_FILTERS:
+	if db.count('filters', 'type = ?', [custom]) == 0:
+		db.insert('filters', (None, custom, '%s spam' % custom, '', 0, 1375265101, 1, 1))
 
 # ADMINS
 for line in open(path.join(lists, 'list.admins'), 'r'):
@@ -132,6 +141,16 @@ for line in open(path.join(lists, 'list.spamfilter'), 'r'):
 	db.update('filters', 'count = ?', 'type = ? and text = ?', [int(score), spamtype, spamtext])
 	print 'updated %s filter "%s" for %s with score %d' % (spamtype, spamtext, credit, int(score))
 db.commit()
+
+
+# ADMIN SCORES
+for line in open(path.join(logs, 'log.scores'), 'r'):
+	line = line.strip()
+	if line == '': continue
+	(username, score, filters) = line.split('|')
+	db.update('admins', 'score = ?', 'username like ?', [int(score), username])
+	print 'updated admin %s with score %d' % (username, int(score))
+
 
 # REMOVED SPAM
 for fil in listdir(logs):

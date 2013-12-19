@@ -194,10 +194,10 @@ class Message(Child,object):
 		return 'http://reddit.com/message/messages/%s' % self.id
 	def mark_as_read(self):
 		d = {
-			'uh' : self.uh,
+			'uh' : self.modhash,
 			'id' : self.full_name()
 		}
-		r = self.web.post('http://www.reddit.com/api/read_message', d)
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/read_message', d)
 		self.new = False
 
 class User(object):

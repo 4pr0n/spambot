@@ -46,19 +46,20 @@ class Filter(object):
 				is_spam = False
 			if len(fields) < 3:
 				# Not enough fields
-				response += '[ **!** ] Not enough required fields in line "%s" (expected 3+, got %d)\n\n' % (line, len(fields))
+				response += '[**!**] Not enough required fields in line "%s" (expected 3+, got %d)\n\n' % (line, len(fields))
 				continue
 			while len(fields) > 3: fields[-1] = fields.pop(-1) + ' ' + fields[-1]
 			(action, spamtype, spamtext) = fields
 			action = action.replace(':', '')
+			spamtype = spamtype.replace(':', '')
 
 			if action not in Filter.ACTIONS:
 				# Undefined action
-				response += '[ **!** ] Undefined action: "%s" (expected one of %s)\n\n' % (action, ', '.join(Filter.ACTIONS))
+				response += '[**!**] Undefined action: "%s" (expected one of %s)\n\n' % (action, ', '.join(Filter.ACTIONS))
 				continue
 			if spamtype not in Filter.TYPES:
 				# Undefined spam type
-				response += '[ **!** ] Unable to %s: Undefined type of spam filter: "%s" (expected one of %s)\n\n' % (action, spamtype, ', '.join(Filter.TYPES))
+				response += '[**!**] Unable to %s: Undefined type of spam filter: "%s" (expected one of %s)\n\n' % (action, spamtype, ', '.join(Filter.TYPES))
 				continue
 
 			if action == 'add':
@@ -71,44 +72,56 @@ class Filter(object):
 					continue
 				# Ensure filter does not already exist
 				if db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) > 0:
-					response += '[ **!** ] Unable to add filter: Filter already exists for %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**!**] Unable to add filter: Filter already exists for %s filter "%s"\n\n' % (spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 0', [spamtype, spamtext]) > 0:
 					# Filter exists but is inactive (removed)
 					db.update('filters', 'active = 1', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, 'activate', timegm(gmtime())))
-					response += '[ **+** ] Successfully activated %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**+**] Successfully activated %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
 					filterid = db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
 					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
-					response += '[ **+** ] Successfully added %s "%s" to the spam filter\n\n' % (spamtype, spamtext)
+					response += '[**+**] Successfully added %s "%s" to the spam filter\n\n' % (spamtype, spamtext)
 			elif action == 'remove':
 				# Request to remove filter
 				if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
-					response += '[ **!** ] Unable to remove filter: Filter does not exist for %s filter "%s"\n\n' % (spamtype, spamtext)
-				elif db.count('filters', 'type = ? and text = ? and active = 1') == 0:
-					response += '[ **!** ] Unable to remove filter: Filter is not active for %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**!**] Unable to remove filter: Filter does not exist for %s filter "%s"\n\n' % (spamtype, spamtext)
+				elif db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) == 0:
+					response += '[**!**] Unable to remove filter: Filter is not active for %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
-					response += '[ **-** ] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
+					response += '[**-**] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
 		return response
 
+
 	@staticmethod
 	def sanity_check(db, spamtype, spamtext):
+		'''
+			Ensures the spam filter is not malicious.
+			Raises:
+				Exception if filter is malicious and should not be added.
+		'''
+		spamtext = spamtext.lower()
 		whitelist = []
 		if spamtype == 'link' or spamtype == 'text' or spamtype == 'thumb':
-			whitelist = ['reddit.com', 'imgur.com', 'min.us', 'minus.com']
+			for whitelisted in ['reddit.com', 'reddit.com/r/', 'imgur.com', 'imgur.com/a/', 'min.us', 'minus.com']:
+				if whitelisted in spamtext or \
+				   spamtext    in whitelisted:
+					raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+
 		elif spamtype == 'tld':
-			whitelist = ['com', 'net', 'org']
+			if spamtext in ['com', 'net', 'org']:
+				raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+
 		elif spamtype == 'user':
-			whitelist = [x[0] for x in db.select('username', 'admins').fetchall()]
-		for whitelisted in whitelist:
-			if whitelisted.lower() in spamtext.lower():
-				raise Exception('[ **!** ] Unable to add filter: Failed sanity test -- might remove relevant "%s" links' % whitelisted)
+			if db.count('admins', 'username like ?', [spamtext]) > 0:
+				raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+
 
 	@staticmethod
 	def detect_spam(child, db, log):
@@ -131,7 +144,7 @@ class Filter(object):
 
 		# Check if child author is an approved submitter/moderator
 		if db.count('subs_approved', 'subreddit = ? and username = ?', [child.subreddit, child.author]) > 0:
-			raise Exception('child was not detected as spam (Author is approved contributor)')
+			raise Exception('/u/%s is approved contributor: %s' % (child.author, child.permalink()))
 
 		# Get 'text' and 'urls' for a reddit child
 		if type(child) == Post:
@@ -181,8 +194,8 @@ class Filter(object):
 			elif spamtype == 'tld':
 				for url in urls:
 					tld = url.lower().replace('http://', '').replace('https://', '').split('/')[0]
-					if '.' in tld: tld = tld[tld.rfind('.')+1:]
-					if tld.lower() == spamtext.lower():
+					tld = tld.split('.')[-1]
+					if tld == spamtext.lower():
 						return (spamid, credit, is_spam)
 			elif spamtype == 'tumblr':
 				for url in urls:
@@ -192,10 +205,11 @@ class Filter(object):
 			elif spamtype == 'blogspot':
 				for url in urls:
 					url = url.lower()
-					if '.blogspot.' in url and '.html' in url:
+					if 'blogspot.' in url and url.split('.')[-1].lower() not in ['jpg', 'jpeg', 'gif', 'png']:
 						return (spamid, credit, is_spam)
 
 		# TODO whois filter (use external service?)
+
 		raise Exception('child was not detected as spam')
 
 

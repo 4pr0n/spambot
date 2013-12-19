@@ -36,8 +36,7 @@ class Bot(object):
 		pages = 1
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
 
-		# TODO Allow checking comments
-		if False and it % 5 == 1:
+		if it % 2 == 1:
 			Bot.log('Bot.execute: Checking messages...')
 			if Bot.check_messages():
 				# Got a PM to add/remove filter, need to look back further
@@ -77,21 +76,22 @@ class Bot(object):
 		if last_pm_time == None:
 			last_pm_time = 0
 		else:
-			last_pm_time = int(last_pm_time)
+			last_pm_time = int(float(last_pm_time))
 
 		for msg in Reddit.get('/message/unread'):
 			if msg.created < last_pm_time: continue
 			try:
-				response = Filter.parse_pm(pm, Bot.db)
+				response = Filter.parse_pm(msg, Bot.db)
+				while response.endswith('\n'): response = response[:-1]
 				Bot.log('Bot.check_messages: Replying to %s with: %s' % (msg.author, response))
+				msg.reply(response)
 				has_new_messages = True
 			except Exception, e:
 				# No need to reply
 				Bot.log('Bot.check_messages: %s' % str(e))
-			last_pm_time = msg.created
+			last_pm_time = int(float(msg.created))
 			Bot.db.set_config('last_pm_time', str(last_pm_time))
-			# TODO Mark as unread
-			#msg.mark_as_read()
+			msg.mark_as_read()
 		return has_new_messages
 
 
