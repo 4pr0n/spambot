@@ -10,6 +10,9 @@ $(document).ready(function() {
 });
 
 function getScoreboard() {
+	$('#scoreboard')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
 	$.getJSON('api.cgi?method=get_scoreboard')
 		.fail(function() {
 			// TODO handle failure
@@ -19,6 +22,10 @@ function getScoreboard() {
 				// TODO Error handler
 				return;
 			}
+			$('#scoreboard')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#scoreboard') )
 				.append( $('<th>#</th>') )
@@ -43,6 +50,9 @@ function getScoreboard() {
 function getRemovedSpam(start, count) {
 	if (start === undefined) start =  0;
 	if (count === undefined) count = 10;
+	$('#removed-spam')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
 	$.getJSON('api.cgi?method=get_removed&start=' + start + '&count=' + count)
 		.fail(function() {
 			// TODO handle failure
@@ -52,7 +62,10 @@ function getRemovedSpam(start, count) {
 				// TODO Error handler
 				return;
 			}
-			$('#removed-spam').empty();
+			$('#removed-spam')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#removed-spam') )
 				.append( $('<th>date</th>') )
@@ -99,6 +112,9 @@ function getRemovedSpam(start, count) {
 function getFilterChanges(start, count) {
 	if (start === undefined) start =  0;
 	if (count === undefined) count = 10;
+	$('#filter-changes')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
 	$.getJSON('api.cgi?method=get_filter&start=' + start + '&count=' + count)
 		.fail(function() {
 			// TODO handle failure
@@ -108,7 +124,10 @@ function getFilterChanges(start, count) {
 				// TODO Error handler
 				return;
 			}
-			$('#filter-changes').empty();
+			$('#filter-changes')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#filter-changes') )
 				.append( $('<th>date</th>') )
@@ -173,12 +192,19 @@ function deleteFilterIcon(type, text) {
 }
 
 function getGraph() {
+	$('div#graph')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
 	$.getJSON('api.cgi?method=get_graph&span=48&interval=3600')
 		.fail(function() {
 			// TODO error handler
 		})
 		.done(function(json) {
 			// Show graph
+			$('div#graph')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
 			$('#recent-range').html('removals in the past ' + json.window);
 			Highcharts.setOptions({
 				global: { useUTC: false }
