@@ -22,7 +22,8 @@ function getScoreboard() {
 				.appendTo( $('#scoreboard') )
 				.append( $('<th>#</th>') )
 				.append( $('<th>admin</th>') )
-				.append( $('<th>score</th>') );
+				.append( $('<th>score</th>') )
+				.append( $('<th>filters</th>') );
 			// Build scoreboard
 			$.each(json.scoreboard, function(index, item) {
 				$('<tr/>')
@@ -32,7 +33,8 @@ function getScoreboard() {
 					.appendTo( $('#scoreboard') )
 					.append( $('<td/>').html(index + 1 ) )
 					.append( $('<td/>').html(item.user ) )
-					.append( $('<td/>').html(item.score) );
+					.append( $('<td/>').html(item.score) )
+					.append( $('<td/>').html(item.filters) );
 			});
 		});
 }
@@ -56,7 +58,7 @@ function getRemovedSpam(start, count) {
 				.append( $('<th>reddit</th>') )
 				.append( $('<th>type</th>') )
 				.append( $('<th>filter text</th>') )
-				.append( $('<th>spam?</th>') )
+				//.append( $('<th>spam?</th>') )
 				.append( $('<th>credit</th>') );
 			// Build scoreboard
 			$.each(json.removed, function(index, item) {
@@ -69,7 +71,7 @@ function getRemovedSpam(start, count) {
 					.append( $('<td/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype) ) )
 					.append( $('<td/>').html(item.spamtype) )
 					.append( $('<td/>').html(item.spamtext) )
-					.append( $('<td/>').html(item.is_spam ) )
+					//.append( $('<td/>').html(item.is_spam ? 'yes' : 'no') )
 					.append( $('<td/>').html(item.author  ) );
 			});
 
@@ -123,7 +125,9 @@ function getFilterChanges(start, count) {
 					.append( $('<td/>').html(item.user    ) )
 					.append( $('<td/>').html(item.action  ) )
 					.append( $('<td/>').html(item.spamtype) )
-					.append( $('<td/>').html(item.spamtext) );
+					.append( $('<td/>')
+						.append(deleteFilterIcon(item.spamtype, item.spamtext))
+						.append( $('<span/>').html(item.spamtext) ));
 			});
 
 			// Back/next buttons
@@ -142,6 +146,27 @@ function getFilterChanges(start, count) {
 				.unbind('click')
 				.click(function() {
 					getFilterChanges(json.start, json.count);
+				});
+		});
+}
+
+function deleteFilterIcon(type, text) {
+	return $('<button type="button" class="btn btn-danger btn-xs"/>')
+		.append( $('<span class="glyphicon glyphicon-remove"/>') )
+		.attr('title', 'delete ' + type + ' filter "' + text + '"')
+		.css('margin-right', '5px')
+		.click(function() {
+			var params = {
+				method   : 'delete_filter',
+				spamtype : type,
+				spamtext : text
+			};
+			$.getJSON('api.cgi?' + $.param(params))
+				.fail(function() {
+					// TODO error handler
+				})
+				.done(function(json) {
+					// TODO display filter is removed
 				});
 		});
 }
