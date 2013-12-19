@@ -15,11 +15,6 @@ UNREAL_SUBS = ['4_pr0n', 'RealGirls', 'Amateur']
 
 CUSTOM_FILTERS = ['tumblr', 'blogspot']
 
-# Root of old version
-oldroot = open('oldbot.root', 'r').read().strip()
-lists = path.join(oldroot, 'lists')
-logs = path.join(oldroot, 'logs')
-
 from Reddit   import Reddit
 from AmArch   import AmArch
 from DB       import DB
@@ -27,6 +22,11 @@ from os       import path, listdir
 from time     import gmtime
 from calendar import timegm
 from datetime import datetime
+
+# Root of old version
+oldroot = open('oldbot.root', 'r').read().strip()
+lists = path.join(oldroot, 'lists')
+logs = path.join(oldroot, 'logs')
 
 db = DB() # Database instance
 
@@ -117,20 +117,28 @@ for line in open(path.join(logs, 'log.spamfilter'), 'r'):
 	fields = line.split(' ')
 	if 'PST]' in fields: fields.remove('PST]')
 	credit = fields[2]
+	if credit == 'the_bot': credit = ''
 	action = fields[3]
 	spamtype = fields[4]
 	if spamtype == 'word': spamtype = 'text'
 	spamtext = line[line.rfind('filter: "')+len('filter: "'):-1]
 	if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
 		try:
-			db.insert('filters', (None, spamtype, spamtext, credit, 0, date, 1, 1))
+			filterid = db.insert('filters', (None, spamtype, spamtext, credit, 0, date, 1, 1))
 			print 'added %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
 		except Exception, e:
 			print str(e)
+			continue
+	else:
+		filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 	if action == 'removed':
 		#db.delete('filters', 'type = ? and text = ?', [spamtype, spamtext])
 		db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 		print 'removed %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
+	else:
+		db.update('filters', 'active = 1', 'id = ?', [filterid])
+	if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
+		db.insert('log_filters', (filterid, credit, action, date))
 db.commit()
 
 
