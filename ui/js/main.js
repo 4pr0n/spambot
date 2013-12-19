@@ -170,3 +170,13 @@ function deleteFilterIcon(type, text) {
 				});
 		});
 }
+
+function getGraph() {
+	$.getJSON('api.cgi?method=get_graph')
+		.fail(function() {
+			// TODO error handler
+		})
+		.done(function(json) {
+			// Show graph
+		});
+}

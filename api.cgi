@@ -16,6 +16,7 @@ def main():
 	if   method == 'get_scoreboard': return get_scoreboard()
 	elif method == 'get_removed':    return get_removed(keys)
 	elif method == 'get_filter':     return get_filter(keys)
+	elif method == 'get_graph':      return get_graph(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -109,6 +110,74 @@ def get_filter(keys):
 			'start' : start + len(result),
 			'count' : count
 		}
+
+def get_graph(keys):
+	from calendar import timegm; from time import gmtime
+	span     = int(keys.get('span',     48))
+	interval = int(keys.get('interval', 3600))
+	now      = (timegm(gmtime()) / interval) * interval # Rounded to last hour
+	pointStart = now - (span * interval)
+
+
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	q = '''
+			select
+				posttype, date
+				from 
+					log_removed
+				where date > %d
+				order by date desc
+		''' % pointStart
+	posts    = [0] * span
+	comments = [0] * span
+	alltypes = [0] * span
+	for (posttype, date) in cursor.execute(q):
+		index = (now - date) / interval
+		if posttype == 'post':    posts[index]    += 1
+		elif posttype == 'comment': comments[index] += 1
+		alltypes[index] += 1
+	cursor.close()
+	return {
+			'window'   : get_hr_time(span * interval),
+			'interval' : get_hr_time(interval),
+			'pointInterval' : interval * 1000,
+			'pointStart' : pointStart * 1000,
+			'series' : [
+				{
+					'name' : 'posts',
+					'data' : posts
+				},
+				{
+					'name' : 'comments',
+					'data' : comments
+				},
+				{
+					'name' : 'all',
+					'data' : alltypes
+				}
+			]
+		}
+
+def get_hr_time(interval):
+	'''
+		Converts seconds into a human-readable unit.
+		Ex:
+			60   -> "min"
+			120  -> "2 mins"
+			300  -> "5 mins"
+			3600 -> "hour"
+			7200 -> "2 hours"
+	'''
+	(value, unit) = (interval, 'sec')
+	if   interval >= 31536000:(value, unit) = (interval / 31536000,'year')
+	elif interval >= 2592000: (value, unit) = (interval / 2592000, 'month')
+	elif interval >= 86400:   (value, unit) = (interval / 86400,   'day')
+	elif interval >= 3600:    (value, unit) = (interval / 3600,    'hour')
+	elif interval >= 60:      (value, unit) = (interval / 60,      'min')
+	return '%s%s%s' % ('%d ' % value if value != 1 else '', unit, 's' if value != 1 else '')
+
 
 def get_keys(): # Get query keys
 	form = FieldStorage()
