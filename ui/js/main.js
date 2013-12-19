@@ -6,6 +6,7 @@ $(document).ready(function() {
 	getScoreboard();
 	getRemovedSpam();
 	getFilterChanges();
+	getGraph();
 });
 
 function getScoreboard() {
@@ -172,11 +173,60 @@ function deleteFilterIcon(type, text) {
 }
 
 function getGraph() {
-	$.getJSON('api.cgi?method=get_graph')
+	$.getJSON('api.cgi?method=get_graph&span=48&interval=3600')
 		.fail(function() {
 			// TODO error handler
 		})
 		.done(function(json) {
 			// Show graph
-		});
+			$('#recent-range').html('removals in the past ' + json.window);
+			Highcharts.setOptions({
+				global: { useUTC: false }
+			});
+			var chart = new Highcharts.Chart({
+				chart: {
+					renderTo: $('div#graph')[0],
+					type: 'line',
+					borderRadius: '20px',
+				},
+				title: {
+					text: null,
+				},
+				xAxis: {
+					type: 'datetime',
+				},
+				yAxis: {
+					type: 'linear',
+					title: 'removals',
+				},
+				plotOptions: {
+					series: {
+						pointStart: json.pointStart,
+						pointInterval: json.pointInterval,
+					},
+				},
+				legend: {
+					align: 'bottom',
+					layout: 'horizontal',
+					verticalAlign: 'bottom',
+					align: 'center',
+					itemMarginTop: 10,
+					itemMarginBottom: 10,
+				},
+			
+				credits: {
+					enabled: true,
+					text: 'data is in ' + json.interval + ' intervals',
+					align: 'left',
+					href: null,
+					position: {
+						align: 'left',
+						x: 10,
+						verticalAlign: 'bottom',
+						y: -15,
+					},
+				},
+				series: json.series,
+			}); // End of Highcharts
+		}); // End of getJSON.done()
 }

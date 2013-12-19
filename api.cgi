@@ -146,16 +146,19 @@ def get_graph(keys):
 			'pointStart' : pointStart * 1000,
 			'series' : [
 				{
-					'name' : 'posts',
-					'data' : posts
+					'name'  : 'posts',
+					'data'  : posts,
+					'total' : sum(posts)
 				},
 				{
-					'name' : 'comments',
-					'data' : comments
+					'name'  : 'comments',
+					'data'  : comments,
+					'total' : sum(comments)
 				},
 				{
-					'name' : 'all',
-					'data' : alltypes
+					'name'  : 'all',
+					'data'  : alltypes,
+					'total' : sum(alltypes)
 				}
 			]
 		}
