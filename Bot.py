@@ -4,14 +4,14 @@
 	Contains infinite loop for all spambot functions.
 '''
 
-from DB        import DB
-from Reddit    import Reddit
-from Filter    import Filter
-from AmArch    import AmArch
-from Rarchives import Rarchives
-from time      import strftime, gmtime
-from sys       import stderr, exit
-from traceback import format_exc
+from py.DB        import DB
+from py.Reddit    import Reddit
+from py.Filter    import Filter
+from py.AmArch    import AmArch
+from py.Rarchives import Rarchives
+from time         import strftime, gmtime
+from sys          import stderr, exit
+from traceback    import format_exc
 
 PAGES_TO_REITERATE = 1
 MOD_SUB = '4_pr0n', #'mod' # TODO Change back to 'mod'

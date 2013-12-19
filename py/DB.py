@@ -1,6 +1,6 @@
 #!/usr/bin/python
 from time import strftime, gmtime, sleep, time as timetime
-from os   import path
+from os   import path, getcwd
 from sys  import stderr
 
 try:                import sqlite3
@@ -122,6 +122,8 @@ INDICES = {
 }
 
 DB_FILE = 'spambot.db'
+if getcwd().endswith('py'):
+	DB_FILE = path.join('..', 'spambot.db')
 
 class DB:
 	def __init__(self):
