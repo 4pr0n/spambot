@@ -130,9 +130,9 @@ def get_graph(keys):
 				where date >= %d
 				order by date desc
 		''' % pointStart
-	posts    = [0] * span
-	comments = [0] * span
-	alltypes = [0] * span
+	posts    = [0] * (span + 1)
+	comments = [0] * (span + 1)
+	alltypes = [0] * (span + 1)
 	for (posttype, date) in cursor.execute(q):
 		index = (date - pointStart) / interval
 		if   posttype == 'post':    posts[index]    += 1
