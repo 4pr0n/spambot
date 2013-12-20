@@ -47,7 +47,7 @@ function getScoreboard() {
 					})
 					.appendTo( $('#scoreboard') )
 					.append( $('<td class="text-right"/>').html(index + 1 ) )
-					.append( $('<td class="text-center"/>').html(item.user ) )
+					.append( $('<td class="text-center text-info"/>').html('<strong>' + item.user + '</strong>') )
 					.append( $('<td class="text-right"/>').html(item.score) )
 					.append( $('<td class="text-right"/>').html(item.filters) )
 					.append( $('<td class="text-right"/>').html( (item.score / item.filters).toFixed(1) + '%') );
@@ -59,9 +59,9 @@ function getScoreboard() {
 				.appendTo( $('#scoreboard') )
 				.append( $('<td/>') )
 				.append( $('<td/>').addClass('text-center').html('') )
-				.append( $('<td/>').addClass('text-right').html(totalScore) )
-				.append( $('<td/>').addClass('text-right').html(totalFilters) )
-				.append( $('<td/>').addClass('text-right').html( (totalScore / totalFilters).toFixed(1) + '%') );
+				.append( $('<td/>').addClass('text-right').html('<strong>' + totalScore + '</strong>') )
+				.append( $('<td/>').addClass('text-right').html('<strong>' + totalFilters + '</strong>') )
+				.append( $('<td/>').addClass('text-right').html('<strong>' + (totalScore / totalFilters).toFixed(1) + '%</strong>'));
 			
 		});
 }
@@ -92,21 +92,21 @@ function getRemovedSpam(start, count) {
 				.append( $('<th class="text-center">type</th>') )
 				.append( $('<th class="text-left">filter text</th>') )
 				//.append( $('<th>spam?</th>') )
-				.append( $('<th>credit</th>') );
+				.append( $('<th>admin</th>') );
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
 					.click(function() {
 						// TODO Error handling
 					})
 					.appendTo( $('#removed-spam') )
-					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
 					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype.substring(0, 4)) ) )
 					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
 					.append( $('<td/>')
 						.append(deleteFilterIcon(item.spamtype, item.spamtext))
 						.append( $('<span class="text-warning"/>').html('<small>' + item.spamtext + '</small>') ))
 					//.append( $('<td/>').html(item.is_spam ? 'yes' : 'no') )
-					.append( $('<td/>').html(item.author  ) );
+					.append( $('<td/>').html('<small>' + item.author.replace('pervertedbylanguage', 'pervertedby&hellip;') + '</small>' ) );
 			});
 
 			// Back/next buttons
@@ -164,7 +164,7 @@ function getFilterChanges(start, count) {
 						// TODO Redirect to filter page
 					})
 					.appendTo( $('#filter-changes') )
-					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-right"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
 					.append( $('<td class="text-right"/>').html(item.user    ) )
 					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + item.action.replace('added', 'plus').replace('removed', 'minus-sign') + '"/>') ) )
 					.append( $('<td/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
@@ -221,7 +221,7 @@ function getContentRemovals(start, count) {
 			$.each(json.content_removals, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#content-removals') )
-					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-right"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
 					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
 					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
 					.append( $('<td class="text-left text-info"/>').html(item.reason  ) );
@@ -274,7 +274,7 @@ function getSources(start, count) {
 			$.each(json.sources, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#sources') )
-					.append( $('<td class="text-center"/> ').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
 					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
 					//.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
 			});
