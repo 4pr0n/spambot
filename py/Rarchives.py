@@ -84,7 +84,7 @@ class Rarchives(object):
 				# Image/album is blacklisted! Remove post
 				log('Rarchives.blacklist_check: Removed %s - matches %s' % (child.permalink(), url))
 				child.remove(mark_as_spam=False)
-				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'illicit content: %s' % url))
+				db.insert('log_amarch', ('removed', child.permalink(), timegm(gmtime()), 'illicit content: %s' % url))
 				return True
 		return False
 
@@ -123,7 +123,7 @@ class Rarchives(object):
 				except Exception, e:
 					log('Rarchives.gonewild_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 				# Update 'log_amarch' db table
-				db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'gonewild repost of /u/%s: %s' % (post['author'], post['permalink'])))
+				db.insert('log_amarch', ('removed', child.permalink(), timegm(gmtime()), 'gonewild repost of /u/%s: %s' % (post['author'], post['permalink'])))
 				return True
 		return False
 
@@ -166,7 +166,7 @@ class Rarchives(object):
 			except Exception, e:
 				log('Rarchives.unreal_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 			# Update 'log_amarch' db table
-			db.insert('log_amarch', ('remove', child.permalink(), timegm(gmtime()), 'unreal post: %s' % post['permalink']))
+			db.insert('log_amarch', ('removed', child.permalink(), timegm(gmtime()), 'unreal post: %s' % post['permalink']))
 			return True
 		return False
 

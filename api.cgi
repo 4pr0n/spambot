@@ -17,6 +17,7 @@ def main():
 	elif method == 'get_removed':    return get_removed(keys)
 	elif method == 'get_filter':     return get_filter(keys)
 	elif method == 'get_graph':      return get_graph(keys)
+	elif method == 'get_content_removals': return get_content_removals(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -115,9 +116,8 @@ def get_graph(keys):
 	from calendar import timegm; from time import gmtime
 	span     = int(keys.get('span',     48))
 	interval = int(keys.get('interval', 3600))
-	now      = (timegm(gmtime()) / interval) * interval # Rounded to last hour
+	now      = (timegm(gmtime()) / interval) * interval # Rounded to the last interval
 	pointStart = now - (span * interval)
-
 
 	from py.DB import DB
 	db = DB()
@@ -127,15 +127,15 @@ def get_graph(keys):
 				posttype, date
 				from 
 					log_removed
-				where date > %d
+				where date >= %d
 				order by date desc
 		''' % pointStart
 	posts    = [0] * span
 	comments = [0] * span
 	alltypes = [0] * span
 	for (posttype, date) in cursor.execute(q):
-		index = (now - date) / interval
-		if posttype == 'post':    posts[index]    += 1
+		index = (date - pointStart) / interval
+		if   posttype == 'post':    posts[index]    += 1
 		elif posttype == 'comment': comments[index] += 1
 		alltypes[index] += 1
 	cursor.close()
@@ -162,6 +162,40 @@ def get_graph(keys):
 				}
 			]
 		}
+
+
+def get_content_removals(keys):
+	start = int(keys.get('start',  0))
+	count = int(keys.get('count', 10))
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	q = '''
+			select
+				action, permalink, date, reason
+				from 
+					log_amarch
+				where action = 'removed'
+				order by date desc
+				limit %d
+				offset %d
+		''' % (count, start)
+	result = []
+	for (action, permalink, date, reason) in \
+			cursor.execute(q):
+		result.append({
+			'action'    : action,
+			'permalink' : permalink,
+			'date'      : date,
+			'reason'    : reason,
+		})
+	cursor.close()
+	return {
+			'content_removals' : result,
+			'start' : start + len(result),
+			'count' : count
+		}
+
 
 def get_hr_time(interval):
 	'''

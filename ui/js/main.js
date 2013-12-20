@@ -6,7 +6,9 @@ $(document).ready(function() {
 	getScoreboard();
 	getRemovedSpam();
 	getFilterChanges();
+	setGraphButtons();
 	getGraph();
+	getContentRemovals();
 });
 
 function getScoreboard() {
@@ -28,22 +30,38 @@ function getScoreboard() {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#scoreboard') )
-				.append( $('<th>#</th>') )
-				.append( $('<th>admin</th>') )
-				.append( $('<th>score</th>') )
-				.append( $('<th>filters</th>') );
+				.append( $('<th class="text-right">#</th>') )
+				.append( $('<th class="text-center">admin</th>') )
+				.append( $('<th class="text-right">score</th>') )
+				.append( $('<th class="text-right">filters</th>') )
+				.append( $('<th class="text-right">%</th>') );
 			// Build scoreboard
+			var totalScore = 0, totalFilters = 0;
 			$.each(json.scoreboard, function(index, item) {
+				totalScore += item.score;
+				totalFilters += item.filters;
 				$('<tr/>')
 					.click(function() {
 						// TODO Direct to user page
 					})
 					.appendTo( $('#scoreboard') )
-					.append( $('<td/>').html(index + 1 ) )
-					.append( $('<td/>').html(item.user ) )
-					.append( $('<td/>').html(item.score) )
-					.append( $('<td/>').html(item.filters) );
+					.append( $('<td class="text-right"/>').html(index + 1 ) )
+					.append( $('<td class="text-center"/>').html(item.user ) )
+					.append( $('<td class="text-right"/>').html(item.score) )
+					.append( $('<td class="text-right"/>').html(item.filters) )
+					.append( $('<td class="text-right"/>').html( (item.score / item.filters).toFixed(1) + '%') );
 			});
+			$('<tr/>')
+				.click(function() {
+					// TODO Direct to user page
+				})
+				.appendTo( $('#scoreboard') )
+				.append( $('<td/>') )
+				.append( $('<td/>').addClass('text-center').html('') )
+				.append( $('<td/>').addClass('text-right').html(totalScore) )
+				.append( $('<td/>').addClass('text-right').html(totalFilters) )
+				.append( $('<td/>').addClass('text-right').html( (totalScore / totalFilters).toFixed(1) + '%') );
+			
 		});
 }
 
@@ -68,23 +86,22 @@ function getRemovedSpam(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#removed-spam') )
-				.append( $('<th>date</th>') )
-				.append( $('<th>reddit</th>') )
-				.append( $('<th>type</th>') )
-				.append( $('<th>filter text</th>') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-center">reddit</th>') )
+				.append( $('<th class="text-center">type</th>') )
+				.append( $('<th class="text-left">filter text</th>') )
 				//.append( $('<th>spam?</th>') )
 				.append( $('<th>credit</th>') );
-			// Build scoreboard
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
 					.click(function() {
 						// TODO Error handling
 					})
 					.appendTo( $('#removed-spam') )
-					.append( $('<td/>').html(new Date(item.date * 1000).toLocaleString() ) )
-					.append( $('<td/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype) ) )
-					.append( $('<td/>').html(item.spamtype) )
-					.append( $('<td/>').html(item.spamtext) )
+					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype) ) )
+					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').html(' ' + item.spamtype)) )
+					.append( $('<td class="text-left"/>').html(item.spamtext) )
 					//.append( $('<td/>').html(item.is_spam ? 'yes' : 'no') )
 					.append( $('<td/>').html(item.author  ) );
 			});
@@ -108,6 +125,9 @@ function getRemovedSpam(start, count) {
 				});
 		});
 }
+function getIconFromType(type) {
+	return type.replace('text', 'pencil').replace('tld', 'globe').replace('thumb', 'picture');
+}
 
 function getFilterChanges(start, count) {
 	if (start === undefined) start =  0;
@@ -130,21 +150,21 @@ function getFilterChanges(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#filter-changes') )
-				.append( $('<th>date</th>') )
-				.append( $('<th>user</th>') )
-				.append( $('<th>action</th>') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">user</th>') )
+				.append( $('<th class="text-center">action</th>') )
 				.append( $('<th>type</th>') )
 				.append( $('<th>filter text</th>') );
 			$.each(json.filter_changes, function(index, item) {
 				$('<tr/>')
 					.click(function() {
-						// TODO Error handling
+						// TODO Redirect to filter page
 					})
 					.appendTo( $('#filter-changes') )
-					.append( $('<td/>').html(new Date(item.date * 1000).toLocaleString() ) )
-					.append( $('<td/>').html(item.user    ) )
-					.append( $('<td/>').html(item.action  ) )
-					.append( $('<td/>').html(item.spamtype) )
+					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-right"/>').html(item.user    ) )
+					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + item.action.replace('added', 'plus').replace('removed', 'minus-sign') + '"/>') ) )
+					.append( $('<td/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').html(' ' + item.spamtype)) )
 					.append( $('<td/>')
 						.append(deleteFilterIcon(item.spamtype, item.spamtext))
 						.append( $('<span/>').html(item.spamtext) ));
@@ -177,25 +197,21 @@ function deleteFilterIcon(type, text) {
 		.css('margin-right', '5px')
 		.click(function() {
 			var params = {
-				method   : 'delete_filter',
-				spamtype : type,
-				spamtext : text
+				to      : 'rarchives',
+				subject : 'dowhatisay',
+				message : 'remove ' + type + ': ' + text,
 			};
-			$.getJSON('api.cgi?' + $.param(params))
-				.fail(function() {
-					// TODO error handler
-				})
-				.done(function(json) {
-					// TODO display filter is removed
-				});
+			window.open('http://www.reddit.com/message/compose/?' + $.param(params));
 		});
 }
 
-function getGraph() {
+function getGraph(span, interval) {
+	if (span     === undefined) span = 48;
+	if (interval === undefined) interval = 3600;
 	$('div#graph')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
-	$.getJSON('api.cgi?method=get_graph&span=48&interval=3600')
+	$.getJSON('api.cgi?method=get_graph&span=' + span + '&interval=' + interval)
 		.fail(function() {
 			// TODO error handler
 		})
@@ -205,7 +221,7 @@ function getGraph() {
 				.empty()
 				.stop()
 				.animate({opacity : 1.0}, 400);
-			$('#recent-range').html('removals in the past ' + json.window);
+			$('#recent-range').html('past ' + json.window);
 			Highcharts.setOptions({
 				global: { useUTC: false }
 			});
@@ -224,6 +240,7 @@ function getGraph() {
 				yAxis: {
 					type: 'linear',
 					title: 'removals',
+					min: 0,
 				},
 				plotOptions: {
 					series: {
@@ -242,7 +259,7 @@ function getGraph() {
 			
 				credits: {
 					enabled: true,
-					text: 'data is in ' + json.interval + ' intervals',
+					text: '' + json.interval + ' interval',
 					align: 'left',
 					href: null,
 					position: {
@@ -254,5 +271,79 @@ function getGraph() {
 				},
 				series: json.series,
 			}); // End of Highcharts
+			$('button[id^="graph-"]').removeClass('active').removeAttr('disabled');
+			$('button#graph-' + json.window.replace(' ', '-')).addClass('active').attr('disabled', 'disabled');
 		}); // End of getJSON.done()
+}
+
+function getContentRemovals(start, count) {
+	if (start === undefined) start =  0;
+	if (count === undefined) count = 10;
+	$('#content-removals')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
+	$.getJSON('api.cgi?method=get_content_removals&start=' + start + '&count=' + count)
+		.fail(function() {
+			// TODO handle failure
+		})
+		.done(function(json) {
+			if (json.error !== undefined) {
+				// TODO Error handler
+				return;
+			}
+			$('#content-removals')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
+			$('<tr/>')
+				.appendTo( $('#content-removals') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-center">action</th>') )
+				.append( $('<th class="text-left">link</th>') )
+				.append( $('<th class="text-left">reason</th>') );
+			$.each(json.content_removals, function(index, item) {
+				$('<tr/>')
+					.appendTo( $('#content-removals') )
+					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
+					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
+					.append( $('<td class="text-left"/>').html(item.reason  ) );
+			});
+
+			// Back/next buttons
+			if (start >= 10) {
+				$('#content-removals-back')
+					.removeAttr('disabled')
+					.unbind('click')
+					.click(function() {
+						getContentRemovals(json.start - 20, json.count);
+					});
+			} else {
+				$('#content-removals-back')
+					.attr('disabled', 'disabled');
+			}
+			$('#content-removals-next')
+				.unbind('click')
+				.click(function() {
+					getContentRemovals(json.start, json.count);
+				});
+		});
+}
+
+function setGraphButtons() {
+	var d = [
+		['3-hours',   60,      60], // 3600     @ 1m
+		['day',      144,     600], // 86400    @ 5m
+		['2-days',   144,    1200], // 172800   @ 10m
+		['7-days',   168,    3600], // 604800   @ 1h
+		['month',    180,  3600*4], // 2592000  @ 4h
+		['6-months', 180, 3600*24], // 15552000 @ 1d
+		['year',     183, 3600*48], // 31622400 @ 2d
+	];
+	$.each(d, function(index, item) {
+		$('button#graph-' + item[0]).click(function() {
+			$(this).addClass('active').attr('disabled', 'disabled');
+			getGraph(item[1], item[2]);
+		});
+	});
 }
