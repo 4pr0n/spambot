@@ -100,9 +100,11 @@ function getRemovedSpam(start, count) {
 					})
 					.appendTo( $('#removed-spam') )
 					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
-					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype) ) )
-					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').html(' ' + item.spamtype)) )
-					.append( $('<td class="text-left"/>').html(item.spamtext) )
+					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype.substring(0, 4)) ) )
+					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
+					.append( $('<td/>')
+						.append(deleteFilterIcon(item.spamtype, item.spamtext))
+						.append( $('<span class="text-warning"/>').html('<small>' + item.spamtext + '</small>') ))
 					//.append( $('<td/>').html(item.is_spam ? 'yes' : 'no') )
 					.append( $('<td/>').html(item.author  ) );
 			});
@@ -165,10 +167,10 @@ function getFilterChanges(start, count) {
 					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
 					.append( $('<td class="text-right"/>').html(item.user    ) )
 					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + item.action.replace('added', 'plus').replace('removed', 'minus-sign') + '"/>') ) )
-					.append( $('<td/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').html(' ' + item.spamtype)) )
+					.append( $('<td/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
 					.append( $('<td/>')
 						.append(deleteFilterIcon(item.spamtype, item.spamtext))
-						.append( $('<span/>').html(item.spamtext) ));
+						.append( $('<span class="text-warning"/>').html('<small>' + item.spamtext + '</small>') ));
 			});
 
 			// Back/next buttons
@@ -222,7 +224,7 @@ function getContentRemovals(start, count) {
 					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
 					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
 					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
-					.append( $('<td class="text-left"/>').html(item.reason  ) );
+					.append( $('<td class="text-left text-info"/>').html(item.reason  ) );
 			});
 
 			// Back/next buttons
@@ -268,13 +270,13 @@ function getSources(start, count) {
 				.appendTo( $('#sources') )
 				.append( $('<th class="text-center">date</th>') )
 				.append( $('<th class="text-center">post</th>') )
-				.append( $('<th class="text-left">album</th>') )
+				//.append( $('<th class="text-left">album</th>') )
 			$.each(json.sources, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#sources') )
 					.append( $('<td class="text-center"/> ').html(new Date(item.date * 1000).toLocaleString() ) )
 					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
-					.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
+					//.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
 			});
 
 			// Back/next buttons
