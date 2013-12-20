@@ -12,7 +12,7 @@ from calendar import timegm
 
 class Rarchives(object):
 	
-	TRUSTED_AUTHORS = ['4_pr0n', 'wakinglife', 'pervertedbylanguage']
+	TRUSTED_AUTHORS    = ['4_pr0n', 'wakinglife', 'pervertedbylanguage']
 	TRUSTED_SUBREDDITS = ['AmateurArchives', 'UnrealGirls', 'gonewild']
 
 	@staticmethod
@@ -185,8 +185,12 @@ class Rarchives(object):
 				 'imgur.com/a/' not in post['url']:
 				continue
 
+			if db.count('do_not_source', 'url = ?', [post['url']) > 0:
+					continue
+
 			# Confirm the album still exists and contains more photos than the child
-			if Rarchives.get_image_count_for_album(post['url']) <= child_album_count:
+			image_count = Rarchives.get_image_count_for_album(post['url'])
+			if image_count <= child_album_count:
 				continue
 
 			# Comment from trusted user/subreddit to imgur album. Looks legit.
@@ -196,6 +200,7 @@ class Rarchives(object):
 				body += 'post'
 			else:
 				body += 'comment'
+			body += '^+%d' % (image_count - 1)
 			body += '**](%s) ^by ^/u/%s\]' % (post['permalink'], post['author'])
 			try:
 				response = child.reply(body)
@@ -210,15 +215,15 @@ class Rarchives(object):
 
 	@staticmethod
 	def get_image_count_for_album(url):
+		url = url.replace('m.imgur.com', 'imgur.com').replace('https://', '').replace('http://', '')
+		aid = url.split('/')[2]
+		url = 'http://imgur.com/a/%s/noscript' % aid
 		httpy = Httpy()
 		r = httpy.get(url)
-		if not 'Album: ' in r: return 0
-		count = httpy.between(r, 'Album: ', ' ')[0].replace(',', '')
-		if not count.isdigit(): return 0
-		return int(count)
+		return r.count('src="//i.imgur.com')
 
 
 if __name__ == '__main__':
-	print Rarchives.get_image_count_for_album('http://imgur.com/a/Feyrp')
+	print Rarchives.get_image_count_for_album('http://imgur.com/a/erraa/rearrange')
 	#print Rarchives.get_results('http://i.imgur.com/iHjXO.jpg')
 	pass

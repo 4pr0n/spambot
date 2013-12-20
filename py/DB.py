@@ -94,6 +94,10 @@ SCHEMA = {
 	'blacklist_urls' :
 		'\n\t' +
 		'url text primary key \n\t',
+	
+	'do_not_source' :
+		'\n\t' +
+		'url text primary key \n\t',
 
 	'config' :
 		'\n\t' +

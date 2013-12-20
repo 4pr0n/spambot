@@ -72,6 +72,25 @@ for thumb in thumbs:
 		db.insert('filters', (None, 'thumb', thumb, '', 0, 1375265101, 1, 1))
 db.commit()
 
+# "Do not source" URLs -- usually mix albums. It's useless to provide source on these
+print '[ ] parsing do-not-source urls'
+do_not_source = [
+	# "Mix" albums
+	'http://imgur.com/a/UUP0J',
+	'http://imgur.com/a/TxNfy',
+	'http://imgur.com/a/Xahz9',
+	'http://imgur.com/a/yqQJx',
+	'http://imgur.com/a/nn9CX',
+
+	'http://imgur.com/a/rGZob', # Filter out halised album
+	'http://imgur.com/a/X994r'  # thatstonerbitch
+]
+for url in do_not_source:
+	if db.count('do_not_source', 'url = ?', [url]) > 0: continue
+	db.insert('do_not_source', (url, ))
+	print '[+] adding url to do_not_source: %s' % url
+db.commit()
+
 print '[ ] parsing file: log.aabot'
 for line in open(path.join(logs, 'log.aabot'), 'r'):
 	line = line.strip()
