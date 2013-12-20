@@ -168,36 +168,39 @@ for line in open(path.join(logs, 'log.mod.subs'), 'r'):
 db.commit()
 
 # SPAM FILTER (author, type, filter, date)
-print '[ ] parsing file: log.spamfilter'
-for line in open(path.join(logs, 'log.spamfilter'), 'r'):
-	line = line.strip()
-	datepst = line[1:line.find(']')].replace(' PST', '')
-	date = int(datetime.strptime(datepst, '%Y-%m-%d %H:%M:%S').strftime('%s'))
-	fields = line.split(' ')
-	if 'PST]' in fields: fields.remove('PST]')
-	credit = fields[2]
-	if credit == 'the_bot': credit = ''
-	action = fields[3]
-	spamtype = fields[4]
-	if spamtype == 'word': spamtype = 'text'
-	spamtext = line[line.rfind('filter: "')+len('filter: "'):-1]
-	if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
-		try:
-			filterid = db.insert('filters', (None, spamtype, spamtext, credit, 0, date, 1, 1))
-			print '[+] filters: added %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
-		except Exception, e:
-			print '[!] %s' % str(e)
-			continue
-	else:
-		filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
-	if action == 'removed':
-		#db.delete('filters', 'type = ? and text = ?', [spamtype, spamtext])
-		db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
-		print '[+] filters: removed %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
-	else:
-		db.update('filters', 'active = 1', 'id = ?', [filterid])
-	if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
-		db.insert('log_filters', (filterid, credit, action, date))
+for fil in listdir(logs):
+	if fil != 'log.spamfilter' and not fil.startswith('log.spamfilter.'): continue
+
+	print '[ ] parsing file:',fil
+	for line in open(path.join(logs, fil), 'r'):
+		line = line.strip()
+		datepst = line[1:line.find(']')].replace(' PST', '')
+		date = int(datetime.strptime(datepst, '%Y-%m-%d %H:%M:%S').strftime('%s'))
+		fields = line.split(' ')
+		if 'PST]' in fields: fields.remove('PST]')
+		credit = fields[2]
+		if credit == 'the_bot': credit = ''
+		action = fields[3]
+		spamtype = fields[4]
+		if spamtype == 'word': spamtype = 'text'
+		spamtext = line[line.rfind('filter: "')+len('filter: "'):-1]
+		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
+			try:
+				filterid = db.insert('filters', (None, spamtype, spamtext, credit, 0, date, 1, 1))
+				print '[+] filters: added %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
+			except Exception, e:
+				print '[!] %s' % str(e)
+				continue
+		else:
+			filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
+		if action == 'removed':
+			#db.delete('filters', 'type = ? and text = ?', [spamtype, spamtext])
+			db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
+			print '[+] filters: removed %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
+		else:
+			db.update('filters', 'active = 1', 'id = ?', [filterid])
+		if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
+			db.insert('log_filters', (filterid, credit, action, date))
 db.commit()
 
 
