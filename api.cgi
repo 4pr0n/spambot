@@ -18,6 +18,7 @@ def main():
 	elif method == 'get_filter':     return get_filter(keys)
 	elif method == 'get_graph':      return get_graph(keys)
 	elif method == 'get_content_removals': return get_content_removals(keys)
+	elif method == 'get_sources':    return get_sources(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -192,6 +193,37 @@ def get_content_removals(keys):
 	cursor.close()
 	return {
 			'content_removals' : result,
+			'start' : start + len(result),
+			'count' : count
+		}
+
+
+def get_sources(keys):
+	start = int(keys.get('start',  0))
+	count = int(keys.get('count', 10))
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	q = '''
+			select
+				date, permalink, album
+				from 
+					log_sourced
+				order by date desc
+				limit %d
+				offset %d
+		''' % (count, start)
+	result = []
+	for (date, permalink, album) in \
+			cursor.execute(q):
+		result.append({
+			'date'      : date,
+			'permalink' : permalink,
+			'album'     : album,
+		})
+	cursor.close()
+	return {
+			'sources' : result,
 			'start' : start + len(result),
 			'count' : count
 		}

@@ -7,8 +7,9 @@ $(document).ready(function() {
 	getRemovedSpam();
 	getFilterChanges();
 	setGraphButtons();
-	getGraph();
 	getContentRemovals();
+	getSources();
+	getGraph();
 });
 
 function getScoreboard() {
@@ -190,6 +191,112 @@ function getFilterChanges(start, count) {
 		});
 }
 
+function getContentRemovals(start, count) {
+	if (start === undefined) start =  0;
+	if (count === undefined) count = 10;
+	$('#content-removals')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
+	$.getJSON('api.cgi?method=get_content_removals&start=' + start + '&count=' + count)
+		.fail(function() {
+			// TODO handle failure
+		})
+		.done(function(json) {
+			if (json.error !== undefined) {
+				// TODO Error handler
+				return;
+			}
+			$('#content-removals')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
+			$('<tr/>')
+				.appendTo( $('#content-removals') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-center">action</th>') )
+				.append( $('<th class="text-left">link</th>') )
+				.append( $('<th class="text-left">reason</th>') );
+			$.each(json.content_removals, function(index, item) {
+				$('<tr/>')
+					.appendTo( $('#content-removals') )
+					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
+					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
+					.append( $('<td class="text-left"/>').html(item.reason  ) );
+			});
+
+			// Back/next buttons
+			if (start >= 10) {
+				$('#content-removals-back')
+					.removeAttr('disabled')
+					.unbind('click')
+					.click(function() {
+						getContentRemovals(json.start - 20, json.count);
+					});
+			} else {
+				$('#content-removals-back')
+					.attr('disabled', 'disabled');
+			}
+			$('#content-removals-next')
+				.unbind('click')
+				.click(function() {
+					getContentRemovals(json.start, json.count);
+				});
+		});
+}
+
+function getSources(start, count) {
+	if (start === undefined) start =  0;
+	if (count === undefined) count = 10;
+	$('#sources')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
+	$.getJSON('api.cgi?method=get_sources&start=' + start + '&count=' + count)
+		.fail(function() {
+			// TODO handle failure
+		})
+		.done(function(json) {
+			if (json.error !== undefined) {
+				// TODO Error handler
+				return;
+			}
+			$('#sources')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
+			$('<tr/>')
+				.appendTo( $('#sources') )
+				.append( $('<th class="text-center">date</th>') )
+				.append( $('<th class="text-center">post</th>') )
+				.append( $('<th class="text-left">album</th>') )
+			$.each(json.sources, function(index, item) {
+				$('<tr/>')
+					.appendTo( $('#sources') )
+					.append( $('<td class="text-center"/> ').html(new Date(item.date * 1000).toLocaleString() ) )
+					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
+					.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
+			});
+
+			// Back/next buttons
+			if (start >= 10) {
+				$('#sources-back')
+					.removeAttr('disabled')
+					.unbind('click')
+					.click(function() {
+						getSources(json.start - 20, json.count);
+					});
+			} else {
+				$('#sources-back')
+					.attr('disabled', 'disabled');
+			}
+			$('#sources-next')
+				.unbind('click')
+				.click(function() {
+					getSources(json.start, json.count);
+				});
+		});
+}
+
 function deleteFilterIcon(type, text) {
 	return $('<button type="button" class="btn btn-danger btn-xs"/>')
 		.append( $('<span class="glyphicon glyphicon-remove"/>') )
@@ -274,60 +381,6 @@ function getGraph(span, interval) {
 			$('button[id^="graph-"]').removeClass('active').removeAttr('disabled');
 			$('button#graph-' + json.window.replace(' ', '-')).addClass('active').attr('disabled', 'disabled');
 		}); // End of getJSON.done()
-}
-
-function getContentRemovals(start, count) {
-	if (start === undefined) start =  0;
-	if (count === undefined) count = 10;
-	$('#content-removals')
-		.stop()
-		.animate({opacity : 0.1}, 1000);
-	$.getJSON('api.cgi?method=get_content_removals&start=' + start + '&count=' + count)
-		.fail(function() {
-			// TODO handle failure
-		})
-		.done(function(json) {
-			if (json.error !== undefined) {
-				// TODO Error handler
-				return;
-			}
-			$('#content-removals')
-				.empty()
-				.stop()
-				.animate({opacity : 1.0}, 400);
-			$('<tr/>')
-				.appendTo( $('#content-removals') )
-				.append( $('<th class="text-right">date</th>') )
-				.append( $('<th class="text-center">action</th>') )
-				.append( $('<th class="text-left">link</th>') )
-				.append( $('<th class="text-left">reason</th>') );
-			$.each(json.content_removals, function(index, item) {
-				$('<tr/>')
-					.appendTo( $('#content-removals') )
-					.append( $('<td class="text-right"/>').html(new Date(item.date * 1000).toLocaleString() ) )
-					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
-					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
-					.append( $('<td class="text-left"/>').html(item.reason  ) );
-			});
-
-			// Back/next buttons
-			if (start >= 10) {
-				$('#content-removals-back')
-					.removeAttr('disabled')
-					.unbind('click')
-					.click(function() {
-						getContentRemovals(json.start - 20, json.count);
-					});
-			} else {
-				$('#content-removals-back')
-					.attr('disabled', 'disabled');
-			}
-			$('#content-removals-next')
-				.unbind('click')
-				.click(function() {
-					getContentRemovals(json.start, json.count);
-				});
-		});
 }
 
 function setGraphButtons() {
