@@ -185,7 +185,7 @@ class Rarchives(object):
 				 'imgur.com/a/' not in post['url']:
 				continue
 
-			if db.count('do_not_source', 'url = ?', [post['url']) > 0:
+			if db.count('do_not_source', 'url = ?', [post['url']]) > 0:
 					continue
 
 			# Confirm the album still exists and contains more photos than the child

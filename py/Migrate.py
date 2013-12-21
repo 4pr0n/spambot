@@ -227,12 +227,15 @@ for line in open(path.join(logs, 'log.scores'), 'r'):
 
 
 # REMOVED SPAM
+total_removed = 0
 for fil in listdir(logs):
 	if fil != 'log.spam' and not fil.startswith('log.spam.'): continue
 	# pass
 	print '[ ] parsing file:',fil
 	for line in open(path.join(logs, fil), 'r'):
 		line = line.strip()
+		if line == '': continue
+		total_removed += 1
 		datepst = line[1:line.find(']')].replace(' PST', '')
 		date = int(datetime.strptime(datepst, '%Y-%m-%d %H:%M:%S').strftime('%s'))
 		fields = line.split(' ')
@@ -260,6 +263,11 @@ for fil in listdir(logs):
 			print '[+] log_removed: added removed %s: %s filter "%s" for %s at %d (%s)' % (posttype, spamtype, spamtext, credit, date, permalink)
 	db.commit()
 
+if db.count('admins', 'username = ""') == 0:
+	db.insert('admins', ('', 0) )
+total_scores = db.select_one('sum(score)', 'admins', 'username != ""')
+db.update('admins', 'score = ?', 'username = ""', [total_removed - total_scores])
+db.commit()
 
 # Login to reddit
 print '[ ] logging in to reddit'

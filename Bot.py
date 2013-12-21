@@ -162,6 +162,7 @@ class Bot(object):
 			Logs text to history file and to stderr.
 			Includes timestamp and formatting
 		'''
+		while txt.endswith('\n'): txt = txt[:-1]
 		tstamp = strftime('[%Y-%m-%dT%H:%M:%SZ] ', gmtime())
 		gap = ' ' * len(tstamp)
 		line = '%s%s' % (tstamp, txt.replace('\n', '\n%s' % gap))

@@ -249,6 +249,7 @@ class Filter(object):
 			db.insert('log_removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
 			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
 			db.update('admins',  'score = score + 1', 'username = ?', [credit])
+			db.commit()
 			return True
 		except Exception, e:
 			# Not spam, or something else went wrong

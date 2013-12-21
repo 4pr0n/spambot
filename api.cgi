@@ -27,6 +27,7 @@ def get_scoreboard():
 	for (username, score) in db.select('username, score', 'admins'):
 		if score == 0: continue
 		filters = db.count('filters', 'author = ?', [username])
+		if filters == 0: continue
 		result.append({
 			'user'    : username,
 			'score'   : score,
