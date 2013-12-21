@@ -91,23 +91,19 @@ function getRemovedSpam(start, count) {
 				.append( $('<th class="text-right">date</th>') )
 				.append( $('<th class="text-center">reddit</th>') )
 				.append( $('<th class="text-center">type</th>') )
-				.append( $('<th class="text-left">filter text</th>') )
-				//.append( $('<th>spam?</th>') )
-				.append( $('<th>admin</th>') );
+				.append( $('<th>thx to</th>') )
+				.append( $('<th class="text-left">filter text</th>') );
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
 					.click(function() {
 						// TODO Error handling
 					})
 					.appendTo( $('#removed-spam') )
-					.append( $('<td class="text-center"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
-					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html(item.posttype.substring(0, 4)) ) )
-					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
-					.append( $('<td/>')
-						.append(deleteFilterIcon(item.spamtype, item.spamtext))
-						.append( $('<span class="text-warning"/>').html('<small>' + item.spamtext + '</small>') ))
-					//.append( $('<td/>').html(item.is_spam ? 'yes' : 'no') )
-					.append( $('<td/>').html('<small>' + item.author.replace('pervertedbylanguage', 'pervertedby&hellip;') + '</small>' ) );
+					.append( getDate(item.date) )
+					.append( getRedditLink(item.permalink, item.posttype) )
+					.append( getIconFromSpamType(item.spamtype) )
+					.append( getUser(item.author) )
+					.append( getIconFromFilter(item.spamtype, item.spamtext, item.is_spam) );
 			});
 
 			// Back/next buttons
@@ -129,8 +125,68 @@ function getRemovedSpam(start, count) {
 				});
 		});
 }
-function getIconFromType(type) {
-	return type.replace('text', 'pencil').replace('tld', 'globe').replace('thumb', 'picture');
+function getUser(user) {
+	var abbr = user
+		.toLowerCase()
+		.replace('pervertedbylanguage', 'pervertedby&hellip;')
+		.replace('storm_troopers', 'stormtroopers');
+	return $('<td/>')
+		.addClass('text-left')
+		.html('<small>' + abbr + '</small>' )
+		.attr('title', user + ' is credited for creating this filter');
+}
+function getIconFromSpamType(type) {
+	return $('<td/>')
+		.addClass('text-center')
+		.append(
+				$('<span/>')
+					.addClass('glyphicon')
+					.addClass('glyphicon-' + 
+							type.replace('text',  'pencil')
+									.replace('tld',   'globe')
+									.replace('thumb', 'picture'))
+					.attr('title', type)
+			);
+}
+function getIconFromFilter(type, text) {
+	var abbr = text;
+	if (abbr.length > 16) {
+		abbr = abbr.substring(0, 15) + '&hellip;';
+	}
+	return $('<td/>')
+		.append(getDeleteIconForFilter(type, text))
+		.append(
+				$('<span/>')
+					.addClass('text-warning')
+					.attr('title', text)
+					.html('<small>' + abbr + '</small>') );
+}
+function getRedditLink(permalink, posttype) {
+	return $('<td/>')
+		.addClass('text-center')
+		.append(
+			$('<a/>')
+			.attr('href', permalink)
+			.html( posttype.substring(0, 4) )
+			.attr('title', 'link to the post on reddit: ' + permalink)
+		);
+}
+function getIconFromAction(action) {
+	return $('<td/>')
+		.addClass('text-center')
+		.append(
+			$('<span/>')
+				.addClass('glyphicon')
+				.addClass('glyphicon-' + 
+						action.replace('added',   'plus')
+									.replace('removed', 'minus-sign'))
+				.attr('title', action)
+		);
+}
+function getDate(date) {
+	return $('<td/>')
+		.addClass('text-right')
+		.html('<small>' + (new Date(date * 1000).toLocaleString()) + '</small>');
 }
 
 function getFilterChanges(start, count) {
@@ -155,23 +211,21 @@ function getFilterChanges(start, count) {
 			$('<tr/>')
 				.appendTo( $('#filter-changes') )
 				.append( $('<th class="text-right">date</th>') )
-				.append( $('<th class="text-right">user</th>') )
+				.append( $('<th class="text-center">user</th>') )
 				.append( $('<th class="text-center">action</th>') )
-				.append( $('<th>type</th>') )
-				.append( $('<th>filter text</th>') );
+				.append( $('<th class="text-center">type</th>') )
+				.append( $('<th class="text-left">filter text</th>') );
 			$.each(json.filter_changes, function(index, item) {
 				$('<tr/>')
 					.click(function() {
 						// TODO Redirect to filter page
 					})
 					.appendTo( $('#filter-changes') )
-					.append( $('<td class="text-right"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
-					.append( $('<td class="text-right"/>').html(item.user    ) )
-					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-' + item.action.replace('added', 'plus').replace('removed', 'minus-sign') + '"/>') ) )
-					.append( $('<td/>').append( $('<span class="glyphicon glyphicon-' + getIconFromType(item.spamtype) + '"/>').attr('title', item.spamtype).html('')) )
-					.append( $('<td/>')
-						.append(deleteFilterIcon(item.spamtype, item.spamtext))
-						.append( $('<span class="text-warning"/>').html('<small>' + item.spamtext + '</small>') ));
+					.append( getDate(item.date) )
+					.append( getUser(item.user) )
+					.append( getIconFromAction(item.action) )
+					.append( getIconFromSpamType(item.spamtype) )
+					.append( getIconFromFilter(item.spamtype, item.spamtext) );
 			});
 
 			// Back/next buttons
@@ -223,8 +277,8 @@ function getContentRemovals(start, count) {
 				$('<tr/>')
 					.appendTo( $('#content-removals') )
 					.append( $('<td class="text-right"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
-					.append( $('<td class="text-center"/>').append( $('<span class="glyphicon glyphicon-minus-sign"/>') ) )
-					.append( $('<td class="text-left"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
+					.append( getIconFromAction(item.action) )
+					.append( getRedditLink(item.permalink, 'post') )
 					.append( $('<td class="text-left text-info"/>').html(item.reason  ) );
 			});
 
@@ -269,14 +323,14 @@ function getSources(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#sources') )
-				.append( $('<th class="text-center">date</th>') )
-				.append( $('<th class="text-center">post</th>') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-center">link</th>') )
 				//.append( $('<th class="text-left">album</th>') )
 			$.each(json.sources, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#sources') )
-					.append( $('<td class="text-center"/>').html('<small>' + new Date(item.date * 1000).toLocaleString()  + '</small>') )
-					.append( $('<td class="text-center"/>').html( $('<a/>').attr('href', item.permalink).html('post') ) )
+					.append( getDate(item.date) )
+					.append( getRedditLink(item.permalink, 'post') )
 					//.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
 			});
 
@@ -300,10 +354,12 @@ function getSources(start, count) {
 		});
 }
 
-function deleteFilterIcon(type, text) {
-	return $('<button type="button" class="btn btn-danger btn-xs"/>')
+function getDeleteIconForFilter(type, text) {
+	return $('<button/>')
+		.attr('type', 'button')
+		.addClass('btn btn-danger btn-xs')
 		.append( $('<span class="glyphicon glyphicon-remove"/>') )
-		.attr('title', 'delete ' + type + ' filter "' + text + '"')
+		.attr('title', 'delete ' + type + ' filter "' + text + '" via a PM to /u/rachives on reddit')
 		.css('margin-right', '5px')
 		.click(function() {
 			var params = {
@@ -369,7 +425,7 @@ function getGraph(span, interval) {
 			
 				credits: {
 					enabled: true,
-					text: '' + json.interval + ' interval',
+					text: '' + json.interval.replace(/s$/, '') + ' intervals',
 					align: 'left',
 					href: null,
 					position: {
