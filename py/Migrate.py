@@ -22,6 +22,7 @@ from time     import gmtime
 from calendar import timegm
 from datetime import datetime
 from sys      import exit
+from json     import loads
 
 # Root of old version
 oldroot = open('oldbot.root', 'r').read().strip()
@@ -166,7 +167,22 @@ for line in open(path.join(logs, 'log.mod.subs'), 'r'):
 	except: pass
 db.commit()
 
-# SPAM FILTER (author, type, filter, date)
+# SPAM FILTER (scores)
+r = Reddit.httpy.get('http://bot.rarchives.com/data.cgi?method=filter&spamtype=&showHidden=true')
+json = loads(r)
+for spamtype in ['word', 'link', 'user']:
+	print 'FILTERS: %s'%spamtype,len(json[spamtype])
+	for filt in json[spamtype]:
+		spamtext = filt['text']
+		count = filt['count']
+		credit = filt['credit']
+		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
+			db.insert('filters', (None, spamtype, spamtext, credit, count, 1387599221, 1, 1))
+			print '[+] added new %s filter "%s" for %s with no date and count %d' % (spamtype, spamtext, credit, count)
+db.commit()
+
+# SPAM FILTER (date)
+updated_date_count = 0
 for fil in listdir(logs):
 	if fil != 'log.spamfilter' and not fil.startswith('log.spamfilter.'): continue
 
@@ -183,36 +199,13 @@ for fil in listdir(logs):
 		spamtype = fields[4]
 		if spamtype == 'word': spamtype = 'text'
 		spamtext = line[line.rfind('filter: "')+len('filter: "'):-1]
-		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
-			try:
-				filterid = db.insert('filters', (None, spamtype, spamtext, credit, 0, date, 1, 1))
-				print '[+] filters: added %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
-			except Exception, e:
-				print '[!] %s' % str(e)
-				continue
-		else:
-			filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
-		if action == 'removed':
-			#db.delete('filters', 'type = ? and text = ?', [spamtype, spamtext])
-			db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
-			print '[+] filters: removed %s filter "%s" for %s at %d' % (spamtype, spamtext, credit, date)
-		else:
-			db.update('filters', 'active = 1', 'id = ?', [filterid])
-		if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
-			db.insert('log_filters', (filterid, credit, action, date))
+		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) > 0:
+			db.update('filters', 'created = ?', 'type = ? and text = ?', [date, spamtype, spamtext])
+			updated_date_count += 1
 db.commit()
+print '[+] updated dates on %d filters' % updated_date_count
+exit(1)
 
-
-# SPAM FILTER (scores)
-print '[ ] parsing file: list.spamfilter'
-for line in open(path.join(lists, 'list.spamfilter'), 'r'):
-	line = line.strip()
-	(spamtype, credit, score, spamtext) = line.split('|')
-	oldscore = db.select('count', 'filters', 'type = ? and text = ?', [spamtype, spamtext]).fetchone()
-	if oldscore != None and oldscore[0] < score:
-		db.update('filters', 'count = ?', 'type = ? and text = ?', [int(score), spamtype, spamtext])
-		print '[+] filters: updated %s filter "%s" for %s with score %d' % (spamtype, spamtext, credit, int(score))
-db.commit()
 
 
 # ADMIN SCORES

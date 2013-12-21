@@ -126,6 +126,8 @@ class Bot(object):
 		page = 0
 		Bot.log('Loading %s' % url)
 		posts = Reddit.get(url)
+		Bot.log('Loaded')
+		latency = int(strftime('%s', gmtime()))
 		while True:
 			page += 1
 			for post in posts:
@@ -135,6 +137,8 @@ class Bot(object):
 				posts = Reddit.next()
 			else:
 				break
+		latency = int(strftime('%s', gmtime())) - latency
+		Bot.log('Post check latency: %ds')
 
 
 	@staticmethod
