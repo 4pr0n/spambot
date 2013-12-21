@@ -204,8 +204,6 @@ for fil in listdir(logs):
 			updated_date_count += 1
 db.commit()
 print '[+] updated dates on %d filters' % updated_date_count
-exit(1)
-
 
 
 # ADMIN SCORES
