@@ -6,7 +6,8 @@
 '''
 
 # Commands for injecting necessary values into DB:
-#sqlite3 spambot.db "insert into config values ( 'reddit_pw', password )"
+#sqlite3 spambot.db "insert into config values ( 'reddit_user', username )"
+#sqlite3 spambot.db "insert into config values ( 'reddit_pw',   password )"
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
 #sqlite3 spambot.db "insert into config values ( 'gw_api_url', url )"
 
@@ -21,7 +22,7 @@ from os       import path, listdir
 from time     import gmtime
 from calendar import timegm
 from datetime import datetime
-from sys      import exit
+from sys      import exit, stdout
 from json     import loads
 
 # Root of old version
@@ -168,14 +169,16 @@ for line in open(path.join(logs, 'log.mod.subs'), 'r'):
 db.commit()
 
 # SPAM FILTER (scores)
+print '[ ] loading full filter list from bot.rarchives'
 r = Reddit.httpy.get('http://bot.rarchives.com/data.cgi?method=filter&spamtype=&showHidden=true')
 json = loads(r)
 for spamtype in ['word', 'link', 'user']:
-	print 'FILTERS: %s'%spamtype,len(json[spamtype])
+	print '[ ] found %d %s filters' % ( len(json[spamtype]), spamtype)
 	for filt in json[spamtype]:
+		if spamtype == 'word': spamtype = 'text'
 		spamtext = filt['text']
-		count = filt['count']
-		credit = filt['credit']
+		count    = filt['count']
+		credit   = filt['credit']
 		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
 			db.insert('filters', (None, spamtype, spamtext, credit, count, 1387599221, 1, 1))
 			print '[+] added new %s filter "%s" for %s with no date and count %d' % (spamtype, spamtext, credit, count)
@@ -186,7 +189,7 @@ updated_date_count = 0
 for fil in listdir(logs):
 	if fil != 'log.spamfilter' and not fil.startswith('log.spamfilter.'): continue
 
-	print '[ ] parsing file:',fil
+	print '[ ] parsing filter log: %s' % fil
 	for line in open(path.join(logs, fil), 'r'):
 		line = line.strip()
 		datepst = line[1:line.find(']')].replace(' PST', '')
@@ -203,11 +206,11 @@ for fil in listdir(logs):
 			db.update('filters', 'created = ?', 'type = ? and text = ?', [date, spamtype, spamtext])
 			updated_date_count += 1
 db.commit()
-print '[+] updated dates on %d filters' % updated_date_count
+print '[+] updated "created" date on %d filters' % updated_date_count
 
 
 # ADMIN SCORES
-print '[ ] parsing file: log.scores'
+print '[ ] parsing score log: log.scores'
 for line in open(path.join(logs, 'log.scores'), 'r'):
 	line = line.strip()
 	if line == '': continue
@@ -221,7 +224,7 @@ total_removed = 0
 for fil in listdir(logs):
 	if fil != 'log.spam' and not fil.startswith('log.spam.'): continue
 	# pass
-	print '[ ] parsing file:',fil
+	print '[ ] parsing spam log:',fil
 	for line in open(path.join(logs, fil), 'r'):
 		line = line.strip()
 		if line == '': continue
@@ -255,27 +258,41 @@ for fil in listdir(logs):
 
 if db.count('admins', 'username = ""') == 0:
 	db.insert('admins', ('', 0) )
+	print '[!] inserting "blank" admin'
 total_scores = db.select_one('sum(score)', 'admins', 'username != ""')
 db.update('admins', 'score = ?', 'username = ""', [total_removed - total_scores])
+print '[!] updated "blank" admin with score: %d' % total_scores
 db.commit()
+
+
+#######################
 
 # Login to reddit
 print '[ ] logging in to reddit'
+username = db.get_config('reddit_user')
 password = db.get_config('reddit_pw')
-Reddit.login('rarchives', password)
+if username == None or password == None:
+	print '[!] "reddit_user" or "reddit_pw" were not found in "config" table in database'
+Reddit.login(username, password)
 
-print '[ ] executing amarch...'
+print '[ ] executing AmArch.py functionality...'
 def log(txt): print txt
 AmArch.execute(db, log)
 
+
 # MODERATED SUBS (real-time)
-print '[ ] loading modded subs...'
+print '[ ] finding modded subs...'
 current = Reddit.get_modded_subreddits()
-print '[ ] found %d modded subs' % len(current)
-for ignore in db.get_config('ignore_subreddits').split(','):
-	if ignore in current:
-		print '[-] removing ignored subreddit: %s' % ignore
-		current.remove(ignore)
+print '[ ] found %d subs modded by /u/%s' % (len(current), username)
+
+# remove subs that should be ignored
+to_ignore = db.get_config('ignore_subreddits')
+if to_ignore != None:
+	for ignore in to_ignore.split(','):
+		if ignore in current:
+			print '[-] removing ignored subreddit: %s' % ignore
+			current.remove(ignore)
+# Remove subs from db that we no longer moderate
 existing = []
 for (sub, ) in db.select('subreddit', 'subs_mod'):
 	if not sub in current:
@@ -283,29 +300,32 @@ for (sub, ) in db.select('subreddit', 'subs_mod'):
 		db.delete('subs_mod', 'subreddit = ?', [sub])
 	else:
 		existing.append(sub)
+# Update list of subs in DB
 for sub in current:
 	if not sub in existing:
 		print '[+] subs_mod: inserting new sub into db: %s' % sub
 		db.insert('subs_mod', (sub, ) )
 db.commit()
 
-# APPROVED SUBMITTERS
 for sub in current:
+	# APPROVED SUBMITTERS
 	count = 0
 	try:
 		print '[ ] loading approved submitters for /r/%s' % sub,
+		stdout.flush()
 		for user in Reddit.get_approved_submitters(sub):
 			if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
 				db.insert('subs_approved', (sub, user))
 				count += 1
 		print '[+] subs_approved: added %d contributors' % count
-		if count > 0:
-			db.commit()
 	except Exception, e:
 		print '[!] %s' % str(e)
+
 	# MODERATORS
+	count = 0
 	try:
 		print '[ ] loading moderators for /r/%s' % sub,
+		stdout.flush()
 		for user in Reddit.get_moderators(sub):
 			if db.count('subs_approved', 'subreddit = ? and username = ?', [sub, user]) == 0:
 				db.insert('subs_approved', (sub, user))
@@ -315,4 +335,7 @@ for sub in current:
 			db.commit()
 	except Exception, e:
 		print '[!] %s' % str(e)
+
+	if count > 0:
+		db.commit()
 
