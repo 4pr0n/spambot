@@ -256,7 +256,7 @@ class Filter(object):
 			if not 'was not detected' in str(e) and \
 			   not 'approved by' in str(e) and \
 				 not 'banned by' in str(e) and \
-				 not 'approved submitter' in str(e):
+				 not 'approved contributor' in str(e):
 				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
 		return False
