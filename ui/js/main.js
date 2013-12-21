@@ -41,6 +41,7 @@ function getScoreboard() {
 			$.each(json.scoreboard, function(index, item) {
 				totalScore += item.score;
 				totalFilters += item.filters;
+				if (item.user == '') item.user = '[internal filters]';
 				$('<tr/>')
 					.click(function() {
 						// TODO Direct to user page
