@@ -31,9 +31,22 @@ class Filter(object):
 			Raises:
 				Exception if PM should not be replied to
 		'''
+		# Check for moderator invites
+		if pm.has_mod_invite():
+			if not pm.accept_mod_invite():
+				raise Exception('failure when accepting mod invite for /r/%s:\n%s' % (pm.subreddit, str(pm)))
+			if db.count('subs_mod', 'subreddit like ?', [pm.subreddit]) > 0:
+				raise Exception('accepted invite to /r/%s (but it is already in the db)' % pm.subreddit)
+			db.insert('subs_mod', (pm.subreddit, ))
+			raise Exception('accepted invite to /r/%s, added to db' % pm.subreddit)
+
+		if type(pm) == Comment:
+			raise Exception('comment from /u/%s:\n%s' % (pm.author, pm.body))
 		if db.count('admins', 'username = ?', [pm.author.lower()]) == 0:
 			# PM is not from an admin. ignore it.
-			raise Exception('Non-Admin PM: %s' % str(pm))
+			raise Exception('PM from *non-admin* /u/%s:\n%s' % (pm.author, pm.body))
+		if pm.subject != 'dowhatisay':
+			raise Exception('PM (not dowhatisay) from *admin* /u/%s:\n%s' % (pm.author, pm.body))
 
 		response = ''
 		for line in pm.body.split('\n'):
@@ -77,12 +90,12 @@ class Filter(object):
 					# Filter exists but is inactive (removed)
 					db.update('filters', 'active = 1', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
-					db.insert('log_filters', (filterid, pm.author, 'activate', timegm(gmtime())))
+					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
 					response += '[**+**] Successfully activated %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
 					filterid = db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
-					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
-					response += '[**+**] Successfully added %s "%s" to the spam filter\n\n' % (spamtype, spamtext)
+					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
+					response += '[**+**] Successfully added %s "%s" to the %s filter\n\n' % (spamtype, spamtext, 'spam' if is_spam else 'remove')
 			elif action == 'remove':
 				# Request to remove filter
 				if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
@@ -92,7 +105,7 @@ class Filter(object):
 				else:
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
-					db.insert('log_filters', (filterid, pm.author, action, timegm(gmtime())))
+					db.insert('log_filters', (filterid, pm.author, 'removed', timegm(gmtime())))
 					response += '[**-**] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
@@ -128,11 +141,7 @@ class Filter(object):
 		''' 
 			Detects if a reddit Child is spam.
 			Returns:
-				Tuple.
-				[0] is the id of the filter that applied in the 'filters' table
-				[1] is the user that gets the credit for the removal
-				[2] boolean, true:  post should be removed as spam,
-				             false: post should be removed as ham
+				ID of filter that detected the spam
 			Raises:
 				Exception if the post is NOT spam
 		'''
@@ -146,7 +155,7 @@ class Filter(object):
 		if db.count('subs_approved', 'subreddit = ? and username = ?', [child.subreddit, child.author]) > 0:
 			raise Exception('/u/%s is approved contributor: %s' % (child.author, child.permalink()))
 
-		# Get 'text' and 'urls' for a reddit child
+		# Get 'text' and 'urls' from the reddit child
 		if type(child) == Post:
 			text = child.title
 			if child.selftext != None:
@@ -158,6 +167,57 @@ class Filter(object):
 		elif type(child) == Comment:
 			urls = Filter.get_links_from_text(child.body)
 			text = child.body
+
+		# Check if child's text/urls match any filters in the db
+
+		# User filter
+		for (filterid,) in db.select('id', 'filters', "type = 'user' and active = 1 and text like ?", [child.author]):
+			return filterid
+
+		# TLD filter
+		if len(urls) > 0:
+			tlds = ' ' # Join all TLDs with spaces
+			for url in urls:
+				tld = url.lower().replace('http://', '').replace('https://', '').split('/')[0]
+				tld = tld.split('.')[-1]
+				tlds = '%s%s ' % (tlds, tld)
+			for (filterid,) in db.select('id', 'filters', "type = 'tld' and active = 1 and ? like '%' || text || '%'", [tlds]):
+				return filterid
+
+		# Link filter
+		if len(urls) > 0:
+			where = '''
+				type = 'link'
+					AND
+				active = 1
+					AND
+				? like '%' || text || '%'
+			'''
+			for (filterid,) in db.select('id', 'filters', where, [' '.join(urls)]):
+				return filterid
+
+		# Text filter
+		where  = '''
+			type = 'text' and active = 1
+			AND (
+				(? like '%' || text || '%')
+					OR
+				(? like '%' || text || '%')
+			)
+		'''
+		for (filterid,) in db.select('id', 'filters', where, [text,' '.join(urls)]):
+			return filterid
+
+		if len(urls) > 0:
+			# Tumblr and blogspot filters
+			for url in urls:
+				url = url.lower()
+				if '.tumblr.com' in url and not 'media.tumblr.com' in url:
+					for (filterid,) in db.select('id', 'filters', "type = 'tumblr' and active = 1"):
+						return filterid
+				if 'blogspot.' in url and url.split('.')[-1].lower() not in ['jpg', 'jpeg', 'gif', 'png']:
+					for (filterid,) in db.select('id', 'filters', "type = 'blogspot' and active = 1"):
+						return filterid
 
 		# Thumb-spam check
 		for url in urls:
@@ -171,42 +231,13 @@ class Filter(object):
 					unicode_resp = httpy.get(url)
 					r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
 					db.insert('checked_albums', (url,) )
-					for (spamid, spamtext, credit, is_spam) in db.select('id, text, author, isspam', 'filters', 'type = "thumb" and active = 1'):
+					for (filterid, spamtext) in db.select('id, text', 'filters', "type = 'thumb' and active = 1"):
 						if spamtext in r:
-							return (spamid, credit, is_spam)
+							return filterid
 				except Exception, e:
 					# Error while loading album (404?)
 					db.insert('checked_albums', (url,) )
 				sleep(0.5)
-
-		# Check if child's text/urls match any filters in the db
-		for (spamid, spamtype, spamtext, credit, is_spam) in db.select('id, type, text, author, isspam', 'filters', 'type != "thumb" and active = 1'):
-			is_spam = (is_spam == 1)
-			if spamtype == 'user' and child.author.lower() == spamtext.lower():
-				return (spamid, credit, is_spam)
-			elif spamtype == 'link':
-				for url in urls:
-					if spamtext.lower() in url.lower():
-						return (spamid, credit, is_spam)
-			elif spamtype == 'text':
-				if spamtext.lower() in text.lower():
-					return (spamid, credit, is_spam)
-			elif spamtype == 'tld':
-				for url in urls:
-					tld = url.lower().replace('http://', '').replace('https://', '').split('/')[0]
-					tld = tld.split('.')[-1]
-					if tld == spamtext.lower():
-						return (spamid, credit, is_spam)
-			elif spamtype == 'tumblr':
-				for url in urls:
-					url = url.lower()
-					if '.tumblr.com' in url and not 'media.tumblr.com' in url:
-						return (spamid, credit, is_spam)
-			elif spamtype == 'blogspot':
-				for url in urls:
-					url = url.lower()
-					if 'blogspot.' in url and url.split('.')[-1].lower() not in ['jpg', 'jpeg', 'gif', 'png']:
-						return (spamid, credit, is_spam)
 
 		# TODO whois filter (use external service?)
 
@@ -225,11 +256,11 @@ class Filter(object):
 		'''
 		try:
 			# detect_spam will throw an exception if it does not detect the child as spam
-			(filterid, credit, is_spam) = Filter.detect_spam(child, db, log)
+			filterid = Filter.detect_spam(child, db, log)
 			# Needs to be removed
-			child.remove(mark_as_spam=is_spam)
 			now = timegm(gmtime())
-			(spamtype, spamtext, author, count) = db.select('type, text, author, count', 'filters', 'id = ?', [filterid]).fetchone()
+			(spamtype, spamtext, author, count, is_spam) = db.select('type, text, author, count, isspam', 'filters', 'id = ?', [filterid]).fetchone()
+			child.remove( mark_as_spam=(is_spam == 1) )
 			if type(child) == Comment:
 				posttype = 'comment'
 				msg  = 'Filter.handle_child: Removing comment by /u/%s\n' % child.author
@@ -246,17 +277,18 @@ class Filter(object):
 					msg += '      URL: %s\n' % child.url
 			msg += 'Permalink: %s\n' % child.permalink()
 			log(msg)
-			db.insert('log_removed', ( filterid, posttype, child.permalink(), credit, timegm(gmtime()) ))
+			db.insert('log_removed', ( filterid, posttype, child.permalink(), author, timegm(gmtime()) ))
 			db.update('filters', 'count = count + 1', 'id = ?', [filterid])
-			db.update('admins',  'score = score + 1', 'username = ?', [credit])
+			db.update('admins',  'score = score + 1', 'username = ?', [author])
 			db.commit()
 			return True
 		except Exception, e:
-			# Not spam, or something else went wrong
+			# Not spam, or something else happened; child was not removed
 			if not 'was not detected' in str(e) and \
 			   not 'approved by' in str(e) and \
 				 not 'banned by' in str(e) and \
 				 not 'approved contributor' in str(e):
+				# Log the exception if it's not expected
 				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
 		return False

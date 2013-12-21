@@ -51,6 +51,13 @@ class Child(object):
 		elif type(self) == Comment: t = 't1'
 		else: raise Exception('unknown type: %s' % str(type(self)))
 		return '%s_%s' % (t, self.id)
+	def mark_as_read(self):
+		d = {
+			'uh' : self.modhash,
+			'id' : self.full_name()
+		}
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/read_message', d)
+		self.new = False
 	
 	# API methods below
 	def vote(self, direction=1):
@@ -192,13 +199,24 @@ class Message(Child,object):
 		self.new     = json['new']
 	def permalink(self):
 		return 'http://reddit.com/message/messages/%s' % self.id
-	def mark_as_read(self):
+	def has_mod_invite(self):
+		''' Checks if message contains a moderator invite '''
+		return (self.author == None or self.author == 'reddit') and \
+		        self.subject.startswith('invitation to moderate /r/')
+	def accept_mod_invite(self):
+		''' Joins subreddit as needed '''
+		if not self.has_mod_invite():
+			raise Exception('Message does not contain a moderator invite')
 		d = {
+			'id' : '',
+			'r'  : self.subreddit,
 			'uh' : self.modhash,
-			'id' : self.full_name()
+			'executed'    : 'you are now a moderator. welcome to the team!',
+			'renderstyle' : 'html'
 		}
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/read_message', d)
-		self.new = False
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
+		return (r != '')
+
 
 class User(object):
 	def __init__(self, json=None):
@@ -258,13 +276,27 @@ class Reddit(object):
 			raise Exception('failed: %s' % r)
 		# Logged in
 
-	'''
-		Get reddit page.
-		Returns a single Post object, or a list of Child-inheriting objects.
-	'''
 	@staticmethod
 	def get(url):
-		# Sanitize URL for API requests
+		'''
+			Gets reddit page containing a single post, 
+			or a list of posts, comments, and/or messages.
+
+			Returns a single Post object, or a list of Child-inheriting 
+			objects (Post, Comment, Message).
+
+			Does not extranous pages such as handle user pages, lists of contributors, etc.
+
+			Args:
+				url: Link to reddit page. Can be shortened ('/r/pics/new').
+				     Does not need .json extension
+
+			Returns:
+				Post object, or list of Children (Posts, Comments, and/or Messages)
+
+			Raises:
+				Descriptive Exception if unable to load or parse page.
+		'''
 		if url.startswith('/'):
 			url = 'http://www.reddit.com%s' % url
 		if not 'json' in url.lower():
@@ -460,14 +492,13 @@ class Reddit(object):
 
 
 if __name__ == '__main__':
-	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json')
-	r = Reddit.get('/r/boltedontits/comments/1r9f6a/_/cdkxy92.json')
-	#r = Reddit.get('/r/boltedontits/comments/.json')
-	#r = Reddit.get('/user/4_pr0n.json')
 	#Reddit.login(user, pass)
-	#subs = Reddit.get_modded_subreddits()
+	#r = Reddit.get('/r/boltedontits/comments/.json') # Comment feed
+	#r = Reddit.get('/r/boltedontits/comments/1r9f6a.json') # Post with comments
+	#r = Reddit.get('/r/boltedontits/comments/1r9f6a/_/cdkxy92.json') # Single comment
 	#r = Reddit.get('/message/moderator/')
 	#r = Reddit.get('/message/inbox/')
+	'''
 	if type(r) == Post:
 		print '"%s" by /u/%s' % (r.title, r.author)
 		Reddit.print_replies(r.replies)
@@ -480,3 +511,4 @@ if __name__ == '__main__':
 			elif type(item) == Message:
 				print 'MESSAGE: /u/%s: "%s" %s' % (item.author, item.permalink(), item.modhash),
 			print '(+%d/-%d)' % (item.ups, item.downs)
+	'''
