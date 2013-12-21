@@ -5,7 +5,7 @@
 '''
 
 from py.DB        import DB
-from py.Reddit    import Reddit
+from py.Reddit    import Reddit, Comment, Post, Message, Child
 from py.Filter    import Filter
 from py.AmArch    import AmArch
 from py.Rarchives import Rarchives
@@ -78,8 +78,8 @@ class Bot(object):
 		else:
 			last_pm_time = int(float(last_pm_time))
 
-		for msg in Reddit.get('/message/unread'):
-			if msg.created < last_pm_time: continue
+		for msg in Reddit.get('/message/inbox'): # TODO unread
+			if msg.created <= last_pm_time or (type(msg) == Message and not msg.new): continue
 			try:
 				response = Filter.parse_pm(msg, Bot.db)
 				while response.endswith('\n'): response = response[:-1]
@@ -138,7 +138,7 @@ class Bot(object):
 			else:
 				break
 		latency = int(strftime('%s', gmtime())) - latency
-		Bot.log('Post check latency: %ds')
+		Bot.log('Post check latency: %ds' % latency)
 
 
 	@staticmethod
@@ -177,11 +177,14 @@ class Bot(object):
 
 
 if __name__ == '__main__':
-	Bot.log('Bot.main: Logging in...')
-	Reddit.login('rarchives', Bot.db.get_config('reddit_pw'))
+	username = Bot.db.get_config('reddit_user')
+	password = Bot.db.get_config('reddit_pw')
+	Bot.log('Bot.main: Logging in to %s...' % username)
+	Reddit.login(username, password)
 	while True:
 		try:
 			Bot.execute()
 		except Exception, e:
 			Bot.log('Bot.main: Exception: %s' % str(e))
 			Bot.log(format_exc())
+
