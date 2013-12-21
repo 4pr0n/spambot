@@ -255,7 +255,8 @@ class Filter(object):
 			# Not spam, or something else went wrong
 			if not 'was not detected' in str(e) and \
 			   not 'approved by' in str(e) and \
-				 not 'banned by' in str(e):
+				 not 'banned by' in str(e) and \
+				 not 'approved submitter' in str(e):
 				log('Filter.handle_child: Exception: %s' % str(e))
 				log(format_exc())
 		return False

@@ -177,7 +177,7 @@ class Rarchives(object):
 		# Count number of images in child album (if there is any)
 		child_album_count = 1 # Default to '1 image'
 		if 'imgur.com/a/' in child.url:
-			child_album_count = Rarchives.get_image_count_for_album(post['url'])
+			child_album_count = Rarchives.get_image_count_for_album(child.url)
 
 		for post in json['posts'] + json['comments']:
 			if post['author'].lower()    not in Rarchives.TRUSTED_AUTHORS and \
