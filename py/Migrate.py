@@ -10,8 +10,7 @@
 #sqlite3 spambot.db "insert into config values ( 'ignore_subreddits', '4_pr0n,reportthespammersNSFW' )"
 #sqlite3 spambot.db "insert into config values ( 'gw_api_url', url )"
 
-# TODO Remove /r/4_pr0n
-UNREAL_SUBS = ['4_pr0n', 'RealGirls', 'Amateur']
+UNREAL_SUBS = ['RealGirls', 'Amateur']
 
 CUSTOM_FILTERS = ['tumblr', 'blogspot']
 

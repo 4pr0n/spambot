@@ -14,7 +14,7 @@ from sys          import stderr, exit
 from traceback    import format_exc
 
 PAGES_TO_REITERATE = 1
-MOD_SUB = '4_pr0n', #'mod' # TODO Change back to 'mod'
+MOD_SUB = 'mod'
 
 class Bot(object):
 	db = DB()
