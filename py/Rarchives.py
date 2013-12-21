@@ -26,6 +26,7 @@ class Rarchives(object):
 		'''
 		# We only care about posts that have URLs (not self-text)
 		if type(child) != Post or child.url == None: return False
+		if 'reddit.com' in child.url: return False # Ignore reddit posts
 
 		# Ensure the child's subreddit is in the list of subreddits to provide source in
 		if db.count('subs_source', 'subreddit like ?', [child.subreddit]) == 0: return False
