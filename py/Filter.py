@@ -59,7 +59,7 @@ class Filter(object):
 				is_spam = False
 			if len(fields) < 3:
 				# Not enough fields
-				response += '[**!**] Not enough required fields in line "%s" (expected 3+, got %d)\n\n' % (line, len(fields))
+				response += '[**!**] Not enough required fields in line `%s`. Expected 3 or more, got `%d`.\n\n' % (line, len(fields))
 				continue
 			while len(fields) > 3: fields[-1] = fields.pop(-1) + ' ' + fields[-1]
 			(action, spamtype, spamtext) = fields
@@ -68,11 +68,11 @@ class Filter(object):
 
 			if action not in Filter.ACTIONS:
 				# Undefined action
-				response += '[**!**] Undefined action: "%s" (expected one of %s)\n\n' % (action, ', '.join(Filter.ACTIONS))
+				response += '[**!**] Undefined action: `%s`. Expected one of the following: `%s`\n\n' % (action, ', '.join(Filter.ACTIONS))
 				continue
 			if spamtype not in Filter.TYPES:
 				# Undefined spam type
-				response += '[**!**] Unable to %s: Undefined type of spam filter: "%s" (expected one of %s)\n\n' % (action, spamtype, ', '.join(Filter.TYPES))
+				response += '[**!**] Unable to %s filter: Undefined type of spam filter: "`%s`". Expected one of the following: `%s`\n\n' % (action, spamtype, ', '.join(Filter.TYPES))
 				continue
 
 			if action == 'add':
@@ -91,7 +91,7 @@ class Filter(object):
 					db.update('filters', 'active = 1', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
-					response += '[**+**] Successfully activated %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**+**] Successfully enabled %s filter "%s"\n\n' % (spamtype, spamtext)
 				else:
 					filterid = db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
 					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
@@ -99,14 +99,14 @@ class Filter(object):
 			elif action == 'remove':
 				# Request to remove filter
 				if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
-					response += '[**!**] Unable to remove filter: Filter does not exist for %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**!**] Unable to remove filter: There are no `%s` filters for "`%s`".\n\n' % (spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) == 0:
-					response += '[**!**] Unable to remove filter: Filter is not active for %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**!**] Unable to remove filter: The `%s` filter "`%s`" is not currently enabled.\n\n' % (spamtype, spamtext)
 				else:
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, 'removed', timegm(gmtime())))
-					response += '[**-**] Successfully deactivated %s filter "%s"' % (spamtype, spamtext)
+					response += '[**-**] Successfully disabled `%s` filter "`%s`".\n\n' % (spamtype, spamtext)
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
 		return response
@@ -120,20 +120,45 @@ class Filter(object):
 				Exception if filter is malicious and should not be added.
 		'''
 		spamtext = spamtext.lower()
-		whitelist = []
-		if spamtype == 'link' or spamtype == 'text' or spamtype == 'thumb':
-			for whitelisted in ['reddit.com', 'reddit.com/r/', 'imgur.com', 'imgur.com/a/', 'min.us', 'minus.com']:
-				if whitelisted in spamtext or \
-				   spamtext    in whitelisted:
-					raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+		whitelist = [
+				# URLS
+				'http://reddit.com/r/',
+				'http://reddit.com/comments/',
+				'http://www.reddit.com/r/',
+				'http://www.reddit.com/comments',
+				'http://imgur.com/',
+				'http://imgur.com/a/',
+				'http://i.imgur.com/',
+				'http://www.imgur.com/',
+				'http://www.imgur.com/a/',
+				'http://i.rarchives.com/'
+				'http://www.rarchives.com/',
+				'http://rip.rarchives.com/',
+				# TEXT - TODO Get a better text whitelist
+				'''the quick brown fox jumped over the lazy dog'''
+			]
+		if spamtype == 'link' or spamtype == 'text':
+			if len(spamtext) <= 3:
+				raise Exception('[**!**] `%s` filter "`%s`" was **not** added because it is not long enough (must be more than 3 characters long).\n\n' % (spamtype, spamtext))
+			for whitelisted in whitelist:
+				if spamtext in whitelisted.lower():
+					raise Exception('[**!**] `%s` filter "`%s`" was **not** added because it might remove relevant posts/comments (e.g. `%s...`).\n\n' % (spamtype, spamtext, whitelisted))
 
 		elif spamtype == 'tld':
 			if spamtext in ['com', 'net', 'org']:
-				raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+				raise Exception('[**!**] TLD `%s` was **not** added because it might remove relevant links (e.g. `.com` or `.net` or `.org`).\n\n' % spamtext)
 
 		elif spamtype == 'user':
 			if db.count('admins', 'username like ?', [spamtext]) > 0:
-				raise Exception('[**!**] Unable to add filter: Failed sanity test -- might remove relevant "%s" links\n\n' % whitelisted)
+				raise Exception('[**!**] User `%s` was **not** added because you cannot add an admin to the spam filter\n\n' % spamtext)
+
+		elif spamtype == 'thumb':
+			# To validate the thumb-spam filter, load a non-spam imgur album and test the filter on that
+			httpy = Httpy()
+			unicode_resp = httpy.get('http://imgur.com/a/RdXNa')
+			r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
+			if spamtext in r:
+				raise Exception('[**!**] Thumb-spam filter `%s` was **not** added because the bot detected a false-positive (non-spam imgur albums would be detected as spam).\n\n' % spamtext)
 
 
 	@staticmethod
@@ -354,3 +379,7 @@ class Filter(object):
 			i = j
 		return list(set(urls)) # Kill duplicates
 
+if __name__ == '__main__':
+	from DB import DB
+	db = DB()
+	print Filter.sanity_check(db, 'text', 'imgur.com')
