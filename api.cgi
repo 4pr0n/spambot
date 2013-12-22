@@ -121,6 +121,7 @@ def get_filter_info(keys):
 		break
 	if filterid == None: # Filter not found
 		raise Exception('filter not found for type "%s" and text "%s"' % (keys['type'], keys['text']))
+	count = db.count('log_removed', 'filterid = ?', [filterid])
 	return {
 		'user'   : author,
 		'count'  : count,

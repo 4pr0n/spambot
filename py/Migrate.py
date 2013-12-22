@@ -209,6 +209,9 @@ for fil in listdir(logs):
 			updated_date_count += 1
 		else:
 			print '[!] did not find filter for type "%s" and text "%s"' % (spamtype, spamtext)
+		filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
+		if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
+			db.insert('log_filters', (filterid, credit, action, date))
 db.commit()
 print '[+] updated "created" date on %d filters' % updated_date_count
 
@@ -249,7 +252,10 @@ for fil in listdir(logs):
 		if spamtype == 'word': spamtype = 'text'
 		spamtext = line[line.rfind(' "')+len(' "'):]
 		spamtext = spamtext[:spamtext.find('" in ')]
-		if spamtext in ['thumb-spam', 'tumblr-spam', 'spammy-TLD']: continue
+		# link, .blogspot.com
+		# edit-spam, imagespam-crap
+		# link, blogspot-spam
+		if spamtext in ['thumb-spam', 'tumblr-spam', 'spammy-TLD', '.blogspot.com']: continue
 		if db.count('log_removed', 'permalink = ? and date = ?', [permalink, date]) == 0:
 			result = db.select('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext]).fetchone()
 			if result == None:

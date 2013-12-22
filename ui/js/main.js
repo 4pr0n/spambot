@@ -18,10 +18,26 @@ $(document).ready(function() {
 	setAutoScrolls();
 	setAutocomplete();
 
+	checkForPageChange();
+});
+
+function checkForPageChange() {
 	var keys = getQueryHashKeys();
 	if ('filter' in keys) {
+		// Mark toolbars as inactive
+		$('a[id^="nav-"]').parent().removeClass('active');
+		// Hide main page
 		$('#container').fadeOut(500);
-		$('#alt-container').fadeIn(500);
+		// Show minipage
+		$('div#alt-spam').remove();
+		$('#alt-container')
+			.fadeIn(500);
+		// Scroll up
+		$('html,body')
+			.stop()
+			.animate({
+				'scrollTop': 0,
+			}, 500);
 		if ('text' in keys) {
 			// Get filter info for specific filter, populate main header
 			getFilterInfo(keys['filter'], keys['text']);
@@ -34,22 +50,23 @@ $(document).ready(function() {
 			// Display just one type of filter (user/text/link/tld/thumb)
 		}
 	}
-});
+}
 
 function getFilterInfo(type, text) {
 	$('h1#title')
 		.empty()
-		.append( $('<em/>').html(text) )
-		.append( '<p><small>' + type + ' filter</small>');
+		.append( $('<small>' + type + ' filter for</small> <em>' + text + '</em>') )
 	var url = 'api.cgi?method=get_filter_info&type=' + type + '&text=' + encodeURIComponent(text);
 	$.getJSON(url)
 		.fail(function() { /* TODO */ })
 		.done(function(json) {
 			$('p#description')
 				.empty()
+				.append( '<strong>' + json.count + '</strong> removal' + (json.count == 1 ? '' : 's') )
+				.append( $('<p/>') )
 				.append( 'created by <strong>' + json.user + '</strong> on ' + (new Date(json.date * 1000)).toLocaleString() )
 				.append( $('<p/>') )
-				.append( 'filter is <strong>' + (json.active ? '' : 'not ') + 'active</strong>' )
+				.append( 'filter is <strong>' + (json.active ? '<b class="text-success">active</b>' : '<b class="text-danger">inactive</b>') + '</strong>' )
 				.append( $('<p/>') )
 				.append( 'filter ' + (json.is_spam ? '<strong>will</strong>' : 'will <strong>not</strong>') + ' remove posts and comments as spam' );
 		});
@@ -232,8 +249,7 @@ function getUser(user) {
 		.replace('storm_troopers', 'stormtroopers');
 	return $('<td/>')
 		.addClass('text-left')
-		.html('<small>' + abbr + '</small>' )
-		.attr('title', user + ' is credited for creating this filter');
+		.html('<small>' + abbr + '</small>' );
 }
 function getIconFromFilter(type, text) {
 	var abbr = text;
@@ -254,7 +270,15 @@ function getIconFromFilter(type, text) {
 				$('<span/>')
 					.addClass('text-warning')
 					.attr('title', text)
-					.html(' <small>' + abbr + '</small>') )
+					.append( $('<a/>')
+						.attr('href', '#filter=' + type + '&text=' + text)
+						.html('<small>' + abbr + '</small>')
+						.click(function() {
+							window.location.hash = $(this).attr('href').replace('#', '');
+							checkForPageChange();
+						})
+					)
+			)
 		.append(getDeleteIconForFilter(type, text));
 }
 function getDeleteIconForFilter(type, text) {
@@ -275,12 +299,19 @@ function getDeleteIconForFilter(type, text) {
 }
 
 function getRedditLink(permalink, posttype) {
+	var txt = posttype.substring(0, 4);
+	if (permalink.indexOf('/r/') >= 0) {
+		txt = permalink.substring(permalink.indexOf('/r/') + 3);
+		txt = txt.substring(0, txt.indexOf('/'));
+		txt = '<small>' + txt + '</small>';
+	}
 	return $('<td/>')
 		.addClass('text-center')
 		.append(
 			$('<a/>')
 			.attr('href', permalink)
-			.html( posttype.substring(0, 4) )
+			.attr('target', '_BLANK_' + permalink)
+			.html( txt )
 			.attr('title', 'link to the post on reddit: ' + permalink)
 		);
 }
@@ -574,6 +605,12 @@ function setAutoScrolls() {
 	$.each(navids, function(index, item) {
 		$(item[0]).mouseup(function() { this.blur() });
 		$(item[0]).click(function() {
+			window.location.hash = '';
+			if ( !$('#container').is(':visible') ) {
+				// Main page is not visible, make it visible
+				$('#alt-container').hide(200);
+				$('#container').fadeIn(200);
+			}
 			$('a[id^="nav-"]').parent().removeClass('active');
 			$(this).parent().addClass('active').blur();
 			if ( $('.navbar-collapse').hasClass('in') ) {
