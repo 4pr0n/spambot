@@ -13,6 +13,10 @@ footer {
   padding: 30px 0;
 }
 
+a {
+	cursor: pointer;
+}
+
 /*
  * Off Canvas
  * --------------------------------------------------
@@ -54,3 +58,46 @@ footer {
 h2 {
 	text-align: center;
 }
+
+.typeahead,
+.tt-query,
+.tt-hint {
+	padding: 7px;
+  outline: none;
+}
+
+.tt-hint {
+  color: #fff;
+}
+
+.tt-dropdown-menu {
+  min-width: 200px;
+  margin-top: 5px;
+  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  -webkit-border-radius: 8px;
+     -moz-border-radius: 8px;
+          border-radius: 8px;
+  -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.5);
+     -moz-box-shadow: 0 5px 10px rgba(0,0,0,.5);
+          box-shadow: 0 5px 10px rgba(0,0,0,.5);
+}
+
+.tt-suggestion {
+  padding: 5px;
+  line-height: 15px;
+	white-space: nowrap;
+}
+
+.tt-suggestion.tt-is-under-cursor {
+  color: #fff;
+  background-color: #0097cf;
+
+}
+
+.tt-suggestion p {
+  margin: 0;
+}
+*/

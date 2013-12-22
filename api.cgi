@@ -1,9 +1,10 @@
 #!/usr/bin/python
 
-from json import dumps
 from traceback import format_exc # Stack traces
-from cgi   import FieldStorage # Query keys
-from cgitb import enable as cgi_enable; cgi_enable() # for debugging
+from json      import dumps
+from cgi       import FieldStorage # Query keys
+from cgitb     import enable as cgi_enable; cgi_enable() # for debugging
+from urllib    import unquote
 
 def main():
 	'''
@@ -19,6 +20,7 @@ def main():
 	elif method == 'get_graph':      return get_graph(keys)
 	elif method == 'get_content_removals': return get_content_removals(keys)
 	elif method == 'get_sources':    return get_sources(keys)
+	elif method == 'search_filters': return search_filters(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -230,6 +232,41 @@ def get_sources(keys):
 		}
 
 
+def search_filters(keys):
+	# Inputs
+	if not 'q' in keys or keys['q'].strip() == '': return {'error':'no key provided'}
+	limit = keys.get('limit', '5')
+	if not limit.isdigit(): limit = '5'
+	# Queries
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	q = '''
+		select
+			type, text, author, count, created, active, isspam
+		from filters
+			where
+	'''
+	words = keys['q'].strip().split(' ')
+	q += ' AND '.join(["text like '%%' || ? || '%%'"] * len(words))
+	q += ' limit %d' % int(limit)
+	curexec = cursor.execute(q, words)
+	result = []
+	for (spamtype, spamtext, author, count, created, active, isspam) in curexec:
+		icon = spamtype.replace('text', 'pencil').replace('thumb', 'picture').replace('tld', 'globe')
+		result.append({
+			'type'   : spamtype,
+			'text'   : spamtext,
+			'author' : author,
+			'count'  : count,
+			'created': created,
+			'active' : active,
+			'is_spam': isspam,
+			'tokens' : spamtext.split(' '),
+			'icon'   : icon
+		})
+	return result
+
 def get_hr_time(interval):
 	'''
 		Converts seconds into a human-readable unit.
@@ -253,7 +290,7 @@ def get_keys(): # Get query keys
 	form = FieldStorage()
 	keys = {}
 	for key in form.keys():
-		keys[key] = form[key].value
+		keys[key] = unquote(form[key].value)
 	return keys
 
 ########################

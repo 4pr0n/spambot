@@ -10,6 +10,8 @@ $(document).ready(function() {
 	getContentRemovals();
 	getSources();
 	getGraph();
+	setAutoScrolls();
+	setAutocomplete();
 });
 
 function getScoreboard() {
@@ -458,4 +460,37 @@ function setGraphButtons() {
 			getGraph(item[1], item[2]);
 		});
 	});
+}
+
+function setAutoScrolls() {
+	var navids = [
+		['#nav-home',     'div.jumbotron'],
+		['.navbar-brand', 'div.jumbotron'],
+		['#nav-scores',   '#scores-anchor'],
+		['#nav-removed',  '#removed-anchor'],
+		['#nav-graphs',   '#graph-anchor']
+	];
+	$.each(navids, function(index, item) {
+		$(item[0]).click(function() {
+			$('a[id^="nav-"]').parent().removeClass('active');
+			$(this).parent().addClass('active').blur();
+			$('html,body')
+				.animate({
+					'scrollTop': $(item[1]).offset().top - $('.navbar').height() - 10,
+				}, 500);
+		});
+	});
+}
+
+function setAutocomplete() {
+	$('#search-filters').typeahead([
+		{
+			name: 'spam-filters',
+			remote: 'api.cgi?method=search_filters&q=%QUERY&limit=10',
+			template: '<table><tr><td><span class="glyphicon glyphicon-{{icon}}" title="{{type}} filter"></span></td><td style="padding-left: 10px">{{text}}</td></tr></table>',
+			valueKey: 'text',
+			limit: 10,
+			engine: Hogan
+		}
+	]);
 }
