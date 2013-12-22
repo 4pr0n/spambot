@@ -12,15 +12,16 @@ def main():
 	'''
 	keys = get_keys()
 	if not 'method' in keys:
-		return {'error':'unspecified method'}
+		raise Exception('unspecified method')
 	method = keys['method']
-	if   method == 'get_scoreboard': return get_scoreboard()
-	elif method == 'get_removed':    return get_removed(keys)
-	elif method == 'get_filter':     return get_filter(keys)
-	elif method == 'get_graph':      return get_graph(keys)
-	elif method == 'get_content_removals': return get_content_removals(keys)
-	elif method == 'get_sources':    return get_sources(keys)
-	elif method == 'search_filters': return search_filters(keys)
+	if   method == 'get_scoreboard':     return get_scoreboard()
+	elif method == 'get_graph':          return get_graph(keys)
+	elif method == 'get_spam':           return get_spam(keys)
+	elif method == 'get_sources':        return get_sources(keys)
+	elif method == 'get_removals':       return get_removals(keys)
+	elif method == 'get_filter_changes': return get_filter_changes(keys)
+	elif method == 'get_filter_info':    return get_filter_info(keys)
+	elif method == 'search_filters':     return search_filters(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -40,12 +41,22 @@ def get_scoreboard():
 		'scoreboard': result
 	}
 
-def get_removed(keys):
+def get_spam(keys):
 	start = int(keys.get('start',  0))
 	count = int(keys.get('count', 10))
 	from py.DB import DB
 	db = DB()
 	cursor = db.conn.cursor()
+
+	where = ''
+	values = []
+	if 'type' in keys:
+		where = 'where type = ?'
+		values.append(keys['type'])
+		if 'text' in keys:
+			where += ' AND text = ?'
+			values.append(keys['text'])
+
 	q = '''
 			select
 				type, text, author, isspam, posttype, permalink, date
@@ -55,18 +66,19 @@ def get_removed(keys):
 					log_removed
 				on
 					log_removed.filterid = filters.id
+				%s
 				order by date desc
 				limit %d
 				offset %d
-		''' % (count, start)
+		''' % (where, count, start)
 	result = []
 	for (spamtype, spamtext, author, isspam, posttype, permalink, date) in \
-			cursor.execute(q):
+			cursor.execute(q, values):
 		if author == '': author = 'internal'
 		result.append({
 			'spamtype'  : spamtype,
 			'spamtext'  : spamtext,
-			'author'    : author,
+			'user'      : author,
 			'is_spam'   : (isspam == 1),
 			'posttype'  : posttype,
 			'permalink' : permalink,
@@ -79,12 +91,55 @@ def get_removed(keys):
 			'count' : count
 		}
 
-def get_filter(keys):
+def get_filter_info(keys):
+	'''
+		Args:
+			keys.type : Spam type. Required.
+			keys.text : Spam text. Required.
+
+		Returns:
+			.user: Author of filter.
+			.count: Number of removals the filter has caused.
+			.date: Filter created.
+			.active: If filter is active or not.
+			.is_spam: If filter removes posts/comments as spam or not.
+	'''
+	if not 'type' in keys: raise Exception('"type" key corresponding to spam type required')
+	if not 'text' in keys: raise Exception('"text" key corresponding to spam text required')
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	# Get filter info
+	q = '''
+		select id, author, count, created, active, isspam
+		from filters
+		where type = ? and text = ?
+	'''
+	curexec = cursor.execute(q, [keys['type'], keys['text']])
+	filterid = None
+	for (filterid, author, count, created, active, is_spam) in curexec:
+		break
+	if filterid == None: # Filter not found
+		raise Exception('filter not found for type "%s" and text "%s"' % (keys['type'], keys['text']))
+	return {
+		'user'   : author,
+		'count'  : count,
+		'date'   : created,
+		'active' : (active == 1),
+		'is_spam': (is_spam == 1),
+	}
+
+def get_filter_changes(keys):
 	start = int(keys.get('start',  0))
 	count = int(keys.get('count', 10))
 	from py.DB import DB
 	db = DB()
 	cursor = db.conn.cursor()
+	where = ''
+	values = []
+	if 'type' in keys:
+		where = 'where type = ?'
+		values.append(keys['type'])
 	q = '''
 			select
 				type, text, user, action, date
@@ -94,13 +149,14 @@ def get_filter(keys):
 					log_filters
 				on
 					log_filters.filterid = filters.id
+				%s
 				order by date desc
 				limit %d
 				offset %d
-		''' % (count, start)
+		''' % (where, count, start)
 	result = []
 	for (spamtype, spamtext, user, action, date) in \
-			cursor.execute(q):
+			cursor.execute(q, values):
 		if user == '': user = 'internal'
 		result.append({
 			'spamtype'  : spamtype,
@@ -117,6 +173,19 @@ def get_filter(keys):
 		}
 
 def get_graph(keys):
+	'''
+		Args:
+			keys.interval: Time-span (in seconds) between datapoints. Default: 3600 (1 hour)
+			keys.span: How many iterations of interval to retrieve. Default: 48 (2 days)
+
+		Returns:
+			.window:        Human-readable time-span the data covers. ("2 days", "week")
+			.pointStart:    .window but in milliseconds.
+			.interval:      Human-readable interval between datapoints. ("hour", "3 hours")
+			.pointInterval: .interval but in milliseconds.
+			.series:        List of dicts, each dict has name, data, and total for that data.
+	'''
+			
 	from calendar import timegm; from time import gmtime
 	span     = int(keys.get('span',     48))
 	interval = int(keys.get('interval', 3600))
@@ -168,7 +237,16 @@ def get_graph(keys):
 		}
 
 
-def get_content_removals(keys):
+def get_removals(keys):
+	'''
+		Args:
+			keys.start: Starting index. Default: 0
+			keys.count: How many records to reutrn. Default: 10
+		Returns:
+			.content_removals: List of dicts with info about removed content
+			.start: The next starting index to query.
+			.count: How many results were requested.
+	'''
 	start = int(keys.get('start',  0))
 	count = int(keys.get('count', 10))
 	from py.DB import DB
@@ -202,6 +280,16 @@ def get_content_removals(keys):
 
 
 def get_sources(keys):
+	'''
+		Returns info about posts that the bot provided 'source' for.
+		Args:
+			keys.start : Starting index. Default: 0
+			keys.count : How many to return. Default: 10
+		Returns:
+			.sources: List of dicts with info about sourced posts.
+			.start:   The next starting index to query.
+			.count:   How many results were requested.
+	'''
 	start = int(keys.get('start',  0))
 	count = int(keys.get('count', 10))
 	from py.DB import DB
@@ -233,8 +321,17 @@ def get_sources(keys):
 
 
 def search_filters(keys):
+	'''
+		Searches for text within filters
+
+		Args:
+			keys.q: URL-encoded query string. Required.
+			keys.limit: Number of results to return. Default: 5
+		Returns:
+			List of dicts containing info about matching filters.
+	'''
 	# Inputs
-	if not 'q' in keys or keys['q'].strip() == '': return {'error':'no key provided'}
+	if not 'q' in keys or keys['q'].strip() == '': raise Exception('no query key "q" provided')
 	limit = keys.get('limit', '5')
 	if not limit.isdigit(): limit = '5'
 	# Queries
@@ -257,11 +354,11 @@ def search_filters(keys):
 		result.append({
 			'type'   : spamtype,
 			'text'   : spamtext,
-			'author' : author,
+			'user'   : author,
 			'count'  : count,
-			'created': created,
-			'active' : active,
-			'is_spam': isspam,
+			'date'   : created,
+			'active' : (active == 1),
+			'is_spam': (isspam == 1),
 			'tokens' : spamtext.split(' '),
 			'icon'   : icon
 		})
@@ -301,6 +398,8 @@ if __name__ == '__main__':
 	try:
 		print dumps(main(), indent=2)
 	except Exception, e:
-		# Return stacktrace
-		print dumps({'error': str(format_exc())})
+		print dumps({
+			'error': str(e),
+			'stack': str(format_exc())
+		})
 	print "\n\n"

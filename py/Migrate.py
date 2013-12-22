@@ -189,7 +189,7 @@ updated_date_count = 0
 for fil in listdir(logs):
 	if fil != 'log.spamfilter' and not fil.startswith('log.spamfilter.'): continue
 
-	print '[ ] parsing filter log: %s' % fil
+	print '[ ] parsing filter log: %s (to update filter creation times)' % fil
 	for line in open(path.join(logs, fil), 'r'):
 		line = line.strip()
 		datepst = line[1:line.find(']')].replace(' PST', '')
@@ -205,6 +205,8 @@ for fil in listdir(logs):
 		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) > 0:
 			db.update('filters', 'created = ?', 'type = ? and text = ?', [date, spamtype, spamtext])
 			updated_date_count += 1
+		else:
+			print '[!] did not find filter for type "%s" and text "%s"' % (spamtype, spamtext)
 db.commit()
 print '[+] updated "created" date on %d filters' % updated_date_count
 
