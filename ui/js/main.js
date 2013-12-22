@@ -20,8 +20,8 @@ $(document).ready(function() {
 
 	var keys = getQueryHashKeys();
 	if ('filter' in keys) {
-		$('#container').slideUp(500);
-		$('#alt-container').slideDown(500);
+		$('#container').fadeOut(500);
+		$('#alt-container').fadeIn(500);
 		if ('text' in keys) {
 			// Get filter info for specific filter, populate main header
 			getFilterInfo(keys['filter'], keys['text']);
@@ -211,7 +211,7 @@ function getSpam(name, start, count, type, text) {
 					.removeAttr('disabled')
 					.unbind('click')
 					.click(function() {
-						getSpam(name, json.start - 20, json.count);
+						getSpam(name, json.start - 20, json.count, type, text);
 					});
 			} else {
 				$('#' + name + '-back')
@@ -220,7 +220,7 @@ function getSpam(name, start, count, type, text) {
 			$('#' + name + '-next')
 				.unbind('click')
 				.click(function() {
-					getSpam(name, json.start, json.count);
+					getSpam(name, json.start, json.count, type, text);
 				});
 		});
 }

@@ -182,6 +182,8 @@ for spamtype in ['word', 'link', 'user']:
 		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
 			db.insert('filters', (None, spamtype, spamtext, credit, count, 1387599221, 1, 1))
 			print '[+] added new %s filter "%s" for %s with no date and count %d' % (spamtype, spamtext, credit, count)
+		else:
+			db.update('filters', 'count = ?', 'type = ? and text = ?', [count, spamtype, spamtext])
 db.commit()
 
 # SPAM FILTER (date)
@@ -251,7 +253,7 @@ for fil in listdir(logs):
 		if db.count('log_removed', 'permalink = ? and date = ?', [permalink, date]) == 0:
 			result = db.select('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext]).fetchone()
 			if result == None:
-				#print '[!] log_removed: no filter found for type %s, text "%s"' % (spamtype, spamtext)
+				print '[!] log_removed: no filter found for type %s, text "%s"' % (spamtype, spamtext)
 				continue
 			filterid = result[0]
 			db.insert('log_removed', (filterid, posttype, permalink, credit, date))
