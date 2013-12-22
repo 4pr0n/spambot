@@ -62,8 +62,8 @@ h2 {
 .typeahead,
 .tt-query,
 .tt-hint {
-	padding: 7px;
-  outline: none;
+	width: 100%;
+	padding: 4px;
 }
 
 .tt-hint {
@@ -71,7 +71,6 @@ h2 {
 }
 
 .tt-dropdown-menu {
-  min-width: 200px;
   margin-top: 5px;
   padding: 8px;
   background-color: #fff;
