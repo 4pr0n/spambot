@@ -207,11 +207,11 @@ for fil in listdir(logs):
 		if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) > 0:
 			db.update('filters', 'created = ?', 'type = ? and text = ?', [date, spamtype, spamtext])
 			updated_date_count += 1
+			filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
+			if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
+				db.insert('log_filters', (filterid, credit, action, date))
 		else:
 			print '[!] did not find filter for type "%s" and text "%s"' % (spamtype, spamtext)
-		filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
-		if db.count('log_filters', 'filterid = ? and user = ? and action = ? and date = ?', [filterid, credit, action, date]) == 0:
-			db.insert('log_filters', (filterid, credit, action, date))
 db.commit()
 print '[+] updated "created" date on %d filters' % updated_date_count
 
