@@ -34,10 +34,10 @@
 				</div>
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li class="active"><a id="nav-home"><span class="glyphicon glyphicon-home"></span></a></li>
-						<li><a id="nav-scores" ><span class="glyphicon glyphicon-user"  ></span> scores </a></li>
-						<li><a id="nav-graphs" ><span class="glyphicon glyphicon-stats" ></span> stats  </a></li>
-						<li><a id="nav-spam"   ><span class="glyphicon glyphicon-remove"></span> spam</a></li>
+						<li class="active"><a href="#" id="nav-home"><span class="glyphicon glyphicon-home"></span></a></li>
+						<li><a href="#scores" id="nav-scores" ><span class="glyphicon glyphicon-user"  ></span> scores </a></li>
+						<li><a href="#stats"   id="nav-graphs" ><span class="glyphicon glyphicon-stats" ></span> stats  </a></li>
+						<li><a href="#spam"    id="nav-spam"   ><span class="glyphicon glyphicon-remove"></span> spam</a></li>
 
 						<!-- Filter dropdown -->
 						<li class="dropdown">
@@ -47,15 +47,15 @@
 							</a>
 							<ul class="dropdown-menu">
 								<li class="dropdown-header">filter types</li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-user"   ></span> link</a></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-pencil" ></span> text</a></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-link"   ></span> user</a></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-picture"></span> thumb</a></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-globe"  ></span> tld</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-user"   ></span> link</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-pencil" ></span> text</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-link"   ></span> user</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-picture"></span> thumb</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-globe"  ></span> tld</a></li>
 								<li class="divider"></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-filter" ></span> all filters</a></li>
+								<li><a><i class="icon-list-alt"></i><span class="glyphicon glyphicon-filter" ></span> all filters</a></li>
 								<li class="divider"></li>
-								<li><a href="#"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-plus"    ></span> add a filter <button class="btn btn-danger btn-xs">mod</button></a></li>
+								<li><a href="#add" id="add-spam-filter"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-plus"    ></span> add a filter <button class="btn btn-danger btn-xs">mod</button></a></li>
 							</ul>
 						</li>
 					</ul>
@@ -85,25 +85,25 @@
 			</div>
 
 			<!-- SCORES -->
-			<div class="col-xs-12 col-md-5" id="scores-anchor">
+			<div class="col-xs-12 col-md-5" id="scores-anchor" style="min-height: 500px">
 				<h2><span class="glyphicon glyphicon-user"></span> scoreboard</h2>
 				<p>
 				<table class="table table-striped table-condensed table-hover" id="scoreboard"></table>
 			</div>
 
 			<!-- GRAPHS -->
-			<div class="col-xs-12 col-md-7" id="stats-anchor">
+			<div class="col-xs-12 col-md-7" id="stats-anchor" style="min-height: 500px">
 				<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
 				<p>
 				<center>
 					<div class="btn-group">
-						<button type="button" class="btn btn-default" id="graph-6-hours" title="past 6 hours" >6h</button>
-						<button type="button" class="btn btn-default" id="graph-day"     title="past day"     >1d</button>
-						<button type="button" class="btn btn-default" id="graph-2-days"  title="past 2 days"  >2d</button>
-						<button type="button" class="btn btn-default" id="graph-7-days"  title="past 7 days"  >7d</button>
-						<button type="button" class="btn btn-default" id="graph-month"   title="past month"   >1mo</button>
-						<button type="button" class="btn btn-default" id="graph-6-months"title="past 6 months">6mo</button>
-						<button type="button" class="btn btn-default" id="graph-year"    title="past year"    >1yr</button>
+						<button type="button" class="btn btn-default" id="graph-6-hours"  title="past 6 hours" >6h</button>
+						<button type="button" class="btn btn-default" id="graph-day"      title="past day"     >1d</button>
+						<button type="button" class="btn btn-default" id="graph-2-days"   title="past 2 days"  >2d</button>
+						<button type="button" class="btn btn-default" id="graph-7-days"   title="past 7 days"  >7d</button>
+						<button type="button" class="btn btn-default" id="graph-month"    title="past month"   >1mo</button>
+						<button type="button" class="btn btn-default" id="graph-6-months" title="past 6 months">6mo</button>
+						<button type="button" class="btn btn-default" id="graph-year"     title="past year"    >1yr</button>
 					</div>
 					<div id="graph"></div>
 				</center>

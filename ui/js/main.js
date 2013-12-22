@@ -18,18 +18,59 @@ $(document).ready(function() {
 	setAutoScrolls();
 	setAutocomplete();
 
+	$('a#add-spam-filter').click(function() {
+		window.location.hash = 'add';
+		checkForPageChange();
+	});
+
+	$(window).resize(function() {
+		$('button.navbar-toggle').click(function() {
+			$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
+		});
+		$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
+	});
+	$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
+
 	checkForPageChange();
 });
 
 function checkForPageChange() {
 	var keys = getQueryHashKeys();
-	if ('filter' in keys) {
+	if ('stats' in keys) {
+		$('html,body')
+			.stop()
+			.animate({
+				'scrollTop': $('#stats-anchor').offset().top - $('.navbar').height(),
+			}, 500);
+	}
+	else if ('scores' in keys) {
+		$('html,body')
+			.stop()
+			.animate({
+				'scrollTop': $('#scores-anchor').offset().top - $('.navbar').height(),
+			}, 500);
+	}
+	else if ('spam' in keys) {
+		$('html,body')
+			.stop()
+			.animate({
+				'scrollTop': $('#spam').offset().top - $('.navbar').height(),
+			}, 500);
+	}
+	else if (window.location.hash !== '#' &&
+			window.location.hash !== '') {
 		// Mark toolbars as inactive
 		$('a[id^="nav-"]').parent().removeClass('active');
 		// Hide main page
-		$('#container').fadeOut(500);
+		$('#container').fadeOut(200);
 		// Show minipage
-		$('div#alt-spam').remove();
+		$('div#alt-container')
+			.empty()
+			.append(
+				$('<div class="jumbotron"/>')
+					.append( $('<h1/>').attr('id', 'title').html('reddit spam bot') )
+					.append( $('<p/>').attr('id', 'description').html('info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>') )
+			);
 		$('#alt-container')
 			.fadeIn(500);
 		// Scroll up
@@ -38,16 +79,22 @@ function checkForPageChange() {
 			.animate({
 				'scrollTop': 0,
 			}, 500);
-		if ('text' in keys) {
-			// Get filter info for specific filter, populate main header
-			getFilterInfo(keys['filter'], keys['text']);
-			// Get removals for filter, insert below header
-			createTable('alt-spam', 'spam removed by filter', 'remove', 'col-xs-12', '#alt-container');
-			getSpam('alt-spam', 0, 10, keys['filter'], keys['text'])
-		} else if (keys['filter'] == 'all') {
-			// Display all filters (user/text/link/tld/thumb)
-		} else {
-			// Display just one type of filter (user/text/link/tld/thumb)
+		if ('filter' in keys) {
+			if ('text' in keys) {
+				// Get filter info for specific filter, populate main header
+				getFilterInfo(keys['filter'], keys['text']);
+				// Get removals for filter, insert below header
+				createTable('alt-spam', 'spam removed by filter', 'remove', 'col-xs-12', '#alt-container');
+				getSpam('alt-spam', 0, 10, keys['filter'], keys['text'])
+			} else if (keys['filter'] == 'all') {
+				// Display all filters (user/text/link/tld/thumb)
+				// TODO
+			} else {
+				// Display just one type of filter (user/text/link/tld/thumb)
+				// TODO
+			}
+		} else if ('add' in keys) {
+			createAddSpamFilterPage();
 		}
 	}
 }
@@ -64,7 +111,7 @@ function getFilterInfo(type, text) {
 				.empty()
 				.append( '<strong>' + json.count + '</strong> removal' + (json.count == 1 ? '' : 's') )
 				.append( $('<p/>') )
-				.append( 'created by <strong>' + json.user + '</strong> on ' + (new Date(json.date * 1000)).toLocaleString() )
+				.append( 'created by <strong>' + getUser(json.user).html() + '</strong> on ' + (new Date(json.date * 1000)).toLocaleString() )
 				.append( $('<p/>') )
 				.append( 'filter is <strong>' + (json.active ? '<b class="text-success">active</b>' : '<b class="text-danger">inactive</b>') + '</strong>' )
 				.append( $('<p/>') )
@@ -79,7 +126,10 @@ function getQueryHashKeys() {
 	var b = {};
 	for (var i = 0; i < a.length; ++i) {
 		var p=a[i].split('=');
-		if (p.length != 2) continue;
+		if (p.length != 2) {
+			b[p[0]] = '';
+			continue;
+		}
 		b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
 	}
 	return b;
@@ -272,7 +322,7 @@ function getIconFromFilter(type, text) {
 					.attr('title', text)
 					.append( $('<a/>')
 						.attr('href', '#filter=' + type + '&text=' + text)
-						.html('<small>' + abbr + '</small>')
+						.html('<small> ' + abbr + '</small>')
 						.click(function() {
 							window.location.hash = $(this).attr('href').replace('#', '');
 							checkForPageChange();
@@ -289,13 +339,17 @@ function getDeleteIconForFilter(type, text) {
 		.attr('title', 'delete ' + type + ' filter "' + text + '" via a PM to /u/rachives on reddit')
 		.css('margin-left', '5px')
 		.click(function() {
-			var params = {
-				to      : 'rarchives',
-				subject : 'dowhatisay',
-				message : 'remove ' + type + ': ' + text,
-			};
-			window.open('http://www.reddit.com/message/compose/?' + $.param(params));
+			sendPM('remove ' + type + ': ' + text);
 		});
+}
+
+function sendPM(body) {
+	var params = {
+		to      : 'rarchives',
+		subject : 'dowhatisay',
+		message : body,
+	};
+	window.open('http://www.reddit.com/message/compose/?' + $.param(params));
 }
 
 function getRedditLink(permalink, posttype) {
@@ -603,9 +657,8 @@ function setAutoScrolls() {
 		['#nav-graphs',   '#stats-anchor']
 	];
 	$.each(navids, function(index, item) {
-		$(item[0]).mouseup(function() { this.blur() });
-		$(item[0]).click(function() {
-			window.location.hash = '';
+		$(item[0]).click(function(e) {
+			//window.location.hash = '';
 			if ( !$('#container').is(':visible') ) {
 				// Main page is not visible, make it visible
 				$('#alt-container').hide(200);
@@ -630,31 +683,161 @@ function setAutoScrolls() {
 						'scrollTop': $(item[1]).offset().top - $('.navbar').height(),
 					}, 500);
 			}
+			return true;
 		});
 	});
 }
 
 function setAutocomplete() {
 	var url = window.location.pathname.replace(/\/filters/, '') + 'api.cgi?method=search_filters&q=%QUERY&limit=10';
+	var temp = '<table><tr><td>';
+	temp += '<span class="glyphicon glyphicon-{{icon}}" title="{{type}} filter"></span>';
+	temp += '</td><td style="padding-left: 10px">';
+	temp += '<a href="#filter={{type}}&text={{text}}">{{text}}</a>';
+	temp += '</td></tr></table>';
 	$('#search-filters').typeahead([
-		{
-			name: 'spam-filters',
-			remote: url,
-			template: '<table><tr><td><span class="glyphicon glyphicon-{{icon}}" title="{{type}} filter"></span></td><td style="padding-left: 10px">{{text}}</td></tr></table>',
-			valueKey: 'text',
-			limit: 10,
-			engine: Hogan
-		}
-	])
-	.focusin(function() {
-		$(this).stop().animate( {
-			'width': ($(window).width() - $(this).offset().left - 50) + 'px'
-		}, 200);
-	})
-	.focusout(function() {
-		$(this).stop().animate( {
-			'width': '150px'
-		}, 200);
-	})
-	.css('width', '150px');
+			{
+				name: 'spam-filters',
+				remote: url,
+				template: temp,
+				valueKey: 'text',
+				limit: 10,
+				engine: Hogan
+			}
+		])
+		.on('typeahead:selected', function($e, datum) {
+			window.location.hash = 'filter=' + datum.type + '&text=' + datum.text;
+			checkForPageChange();
+		})
+		.focusin(function() {
+			$(this).stop().animate( {
+				'width': ($(window).width() - $(this).offset().left - 50) + 'px'
+			}, 200);
+		})
+		.focusout(function() {
+			$(this).stop().animate( {
+				'width': ($(window).width() - $('#search-filters').offset().left - 60) + 'px'
+			}, 200);
+		})
+		.css('width', '150px');
 }
+
+function createAddSpamFilterPage() {
+	$('h1#title')
+		.empty()
+		.append( 'add spam filter' );
+	var $p = $('p#description')
+		.empty()
+		.append( $('<div class="text-danger text-right"/>').html('note: only admins can add filters') );
+	var $g = $('<div/>')
+		.addClass('input-group')
+		.appendTo($p);
+	$('<input/>')
+		.attr('id', 'add-spam-filter')
+		.attr('type', 'text')
+		.attr('placeholder', 'type or paste filter here')
+		.addClass('form-control')
+		.appendTo($g);
+	var $gb = $('<div/>')
+		.addClass('input-group-btn')
+		.appendTo($g);
+	var $btn = $('<button/>')
+		.attr('type', 'button')
+		.addClass('btn btn-default dropdown-toggle')
+		.attr('data-toggle', 'dropdown')
+		.html('add as...')
+		.appendTo($gb);
+	$('<span/>')
+		.addClass('caret')
+		.appendTo($btn);
+	var $ul = $('<ul/>')
+		.addClass('dropdown-menu pull-right')
+		.appendTo($gb);
+	$('<a/>')
+		.attr('id', 'filter-add-link')
+		.html('<span class="glyphicon glyphicon-link"></span> link')
+		.click(function() {
+			sendPM('add link: ' + $('input#add-spam-filter').val());
+			$('input#add-spam-filter').val('');
+		})
+		.appendTo( $('<li/>').appendTo($ul) );
+	$('<a/>')
+		.attr('id', 'filter-add-text')
+		.html('<span class="glyphicon glyphicon-pencil"></span> text')
+		.click(function() {
+			sendPM('add text: ' + $('input#add-spam-filter').val());
+			$('input#add-spam-filter').val('');
+		})
+		.appendTo( $('<li/>').appendTo($ul) );
+	$('<a/>')
+		.attr('id', 'filter-add-user')
+		.html('<span class="glyphicon glyphicon-user"></span> user')
+		.click(function() {
+			sendPM('add user: ' + $('input#add-spam-filter').val());
+			$('input#add-spam-filter').val('');
+		})
+		.appendTo( $('<li/>').appendTo($ul) );
+	$('<a/>')
+		.attr('id', 'filter-add-tld')
+		.html('<span class="glyphicon glyphicon-globe"></span> tld')
+		.click(function() {
+			sendPM('add tld: ' + $('input#add-spam-filter').val());
+			$('input#add-spam-filter').val('');
+		})
+		.appendTo( $('<li/>').appendTo($ul) );
+	$('<a/>')
+		.attr('id', 'filter-add-thumb')
+		.html('<span class="glyphicon glyphicon-picture"></span> thumb')
+		.click(function() {
+			sendPM('add thumb: ' + $('input#add-spam-filter').val());
+			$('input#add-spam-filter').val('');
+		})
+		.appendTo( $('<li/>').appendTo($ul) );
+	$('#alt-container')
+		.append( $('<div class="col-xs-12">')
+				.append($('<h1/>').html('link filter'))
+				.append($('<p/>').html('link filters apply to any text within a link.') )
+				.append($('<p/>').html('only searches through links that contain <code>http://</code>') )
+				.append($('<p/>').html('example:') ) 
+				.append($('<p/>').addClass('lead').html('link filter <code>site.com</code> will detect and remove links to <code>http://site.com/page.jpg</code>, <code>http://website.com</code>, etc.') )
+		);
+	$('#alt-container')
+		.append( 
+			$('<div class="col-xs-12">')
+				.append($('<h1/>').html('text filter'))
+				.append(
+					$('<p/>').html('searches')
+						.append( $('<ul/>')
+							.append( $('<li/>').html('post titles') )
+							.append( $('<li/>').html('post urls') )
+							.append( $('<li/>').html('post selftext') )
+							.append( $('<li/>').html('comment text') )
+						)
+					)
+				.append($('<p/>').html('example:') ) 
+				.append($('<p/>').addClass('lead').html('text filter <code>click here</code> will detect and remove comments that contain <code>click here to see the video!</code>, or <code>if you want a click here\'s your chance</code>, etc; regardless of if the <code>click here</code> is within a link or not.') )
+			);
+						
+	$('#alt-container')
+		.append( $('<div class="col-xs-12">')
+				.append($('<h1/>').html('user filter'))
+				.append($('<p/>').html('matches to a full username, not case sensitive.') )
+				.append($('<p/>').html('example:') ) 
+				.append($('<p/>').addClass('lead').html('<code>ViolentAcrez</code> would detect and remove posts/comments from <code>/u/violentacrez</code> but not <code>/u/violentacrez2</code>') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12">')
+				.append($('<h1/>').html('tld filter'))
+				.append($('<p/>').html('TLD (top-level domain) filters match a link\'s TLD.') )
+				.append($('<p/>').html('example:') ) 
+				.append($('<p/>').addClass('lead').html('the site <code>www.site.ru/index.php</code> has the TLD <code>ru</code>') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12">')
+				.append($('<h1/>').html('thumb filter'))
+				.append($('<p/>').html('targets a specific type of spam: "thumb spam", aka imgur albums that contain links to spam sites. the bot will look inside of each imgur album and detect spammy links within.<p>called <code>thumb spam</code> because initially many spammers had albums with a tiny image and a link that said "click here for a larger image".') )
+				.append($('<p/>').html('example:') ) 
+				.append($('<p/>').addClass('lead').html('an imgur album that contains the text <code>click here!</code> would be removed because (so far) only spammers include this text in their albums') )
+		);
+}
+
