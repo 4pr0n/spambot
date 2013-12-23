@@ -24,6 +24,7 @@ def main():
 	elif method == 'get_filters':        return get_filters(keys)
 	elif method == 'search_filters':     return search_filters(keys)
 	elif method == 'get_modded_subs':    return get_modded_subs(keys)
+	elif method == 'get_last_update':    return get_last_update()
 
 def get_scoreboard():
 	from py.DB import DB
@@ -460,6 +461,17 @@ def get_modded_subs(keys):
 			'count' : count,
 			'total' : total
 		}
+
+def get_last_update():
+	from py.DB import DB
+	db = DB()
+	last_update = db.get_config('last_update')
+	if last_update != None:
+		last_update = int(last_update)
+	return {
+		'last_update' : last_update
+	}
+	
 
 def get_hr_time(interval):
 	'''

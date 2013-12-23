@@ -6,7 +6,7 @@
 
 from time      import gmtime, sleep
 from calendar  import timegm
-from Reddit    import Post, Comment, Child
+from Reddit    import Post, Comment, Child, Message
 from Httpy     import Httpy
 from traceback import format_exc
 

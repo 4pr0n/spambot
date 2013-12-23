@@ -33,6 +33,9 @@ class Bot(object):
 		Bot.iterations += 1
 		it = Bot.iterations
 
+		# Set update time
+		Bot.db.set_config('last_update', strftime('%s', gmtime()))
+
 		pages = 1
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
 
