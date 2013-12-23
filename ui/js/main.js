@@ -23,10 +23,17 @@ $(document).ready(function() {
 		checkForPageChange();
 	});
 
+	$('a#view-filter-link' ).click(function() { window.location.hash = '#filter=link' ; checkForPageChange(); });
+	$('a#view-filter-text' ).click(function() { window.location.hash = '#filter=text' ; checkForPageChange(); });
+	$('a#view-filter-user' ).click(function() { window.location.hash = '#filter=user' ; checkForPageChange(); });
+	$('a#view-filter-tld'  ).click(function() { window.location.hash = '#filter=tld'  ; checkForPageChange(); });
+	$('a#view-filter-thumb').click(function() { window.location.hash = '#filter=thumb'; checkForPageChange(); });
+	$('a#view-filter-all'  ).click(function() { window.location.hash = '#filter=all'  ; checkForPageChange(); });
+
 	$(window).resize(function() {
-		$('button.navbar-toggle').click(function() {
-			$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
-		});
+		$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
+	});
+	$('button.navbar-toggle').click(function() {
 		$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
 	});
 	$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
@@ -64,15 +71,6 @@ function checkForPageChange() {
 		// Hide main page
 		$('#container').fadeOut(200);
 		// Show minipage
-		$('div#alt-container')
-			.empty()
-			.append(
-				$('<div class="jumbotron"/>')
-					.append( $('<h1/>').attr('id', 'title').html('reddit spam bot') )
-					.append( $('<p/>').attr('id', 'description').html('info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>') )
-			);
-		$('#alt-container')
-			.fadeIn(500);
 		// Scroll up
 		$('html,body')
 			.stop()
@@ -81,6 +79,15 @@ function checkForPageChange() {
 			}, 500);
 		if ('filter' in keys) {
 			if ('text' in keys) {
+				$('div#alt-container')
+					.empty()
+					.append(
+						$('<div class="jumbotron"/>')
+							.append( $('<h1/>').attr('id', 'title').html('reddit spam bot') )
+							.append( $('<p/>').attr('id', 'description').html('info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>') )
+					);
+				$('#alt-container')
+					.fadeIn(500);
 				// Get filter info for specific filter, populate main header
 				getFilterInfo(keys['filter'], keys['text']);
 				// Get removals for filter, insert below header
@@ -88,15 +95,47 @@ function checkForPageChange() {
 				getSpam('alt-spam', 0, 10, keys['filter'], keys['text'])
 			} else if (keys['filter'] == 'all') {
 				// Display all filters (user/text/link/tld/thumb)
-				// TODO
+				$('div#alt-container')
+					.empty()
+					.append(
+						$('<div class="jumbotron"/>')
+							.append( $('<h1/>').attr('id', 'title').html('all spam filters') )
+							.append( $('<p/>').attr('id', 'description').html('below are all spam filters used by the bot to detect and remove spam') )
+					);
+				$('#alt-container')
+					.fadeIn(500);
+				createTable('alt-filter-link',  'link filters',  'link',    'col-xs-12 col-lg-6', '#alt-container');
+				createTable('alt-filter-text',  'text filters',  'pencil',  'col-xs-12 col-lg-6', '#alt-container');
+				createTable('alt-filter-user',  'user filters',  'user',    'col-xs-12 col-lg-6', '#alt-container');
+				createTable('alt-filter-tld',   'tld filters',   'globe',   'col-xs-12 col-lg-6', '#alt-container');
+				createTable('alt-filter-thumb', 'thumb filters', 'picture', 'col-xs-12 col-lg-6', '#alt-container');
+				getFilters('alt-filter-link',  'link');
+				getFilters('alt-filter-text',  'text');
+				getFilters('alt-filter-user',  'user');
+				getFilters('alt-filter-tld',   'tld');
+				getFilters('alt-filter-thumb', 'thumb');
 			} else {
 				// Display just one type of filter (user/text/link/tld/thumb)
-				// TODO
+				$('div#alt-container')
+					.empty()
+					.append(
+						$('<div class="jumbotron"/>')
+							.append( $('<h1/>').attr('id', 'title').html(keys['filter'] + ' spam filters') )
+							.append( $('<p/>').attr('id', 'description').html('below are all "' + keys['filter'] + '" filters used to detect and remove spam') )
+					);
+				$('#alt-container')
+					.fadeIn(500);
+				createTable('alt-filter-' + keys['filter'], keys['filter'] + ' filters', 'filter', 'col-xs-12', '#alt-container');
+				getFilters('alt-filter-' + keys['filter'],  keys['filter']);
 			}
 		} else if ('add' in keys) {
 			createAddSpamFilterPage();
 		}
 	}
+}
+
+function addFilterTable(type) {
+	
 }
 
 function getFilterInfo(type, text) {
@@ -142,7 +181,7 @@ function createTable(name, title, icon, cols, appendto) {
 	$('<h2/>')
 		.appendTo( $div )
 		.append  ( $('<b/>').addClass('glyphicon glyphicon-' + icon) )
-		.append  ( $('<span/>').html(' ' + title) );
+		.append  ( $('<span id="' + name + '-title"/>').html(' ' + title) );
 	$('<p/>').appendTo( $div );
 	$('<table/>')
 		.appendTo( $div )
@@ -231,13 +270,72 @@ function getScoreboard() {
 		});
 }
 
+function getFilters(name, type, start, count) {
+	if (start === undefined) start =  0;
+	if (count === undefined) count = 10;
+	$('#' + name + '-table')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
+	var url = 'api.cgi?method=get_filters&start=' + start + '&count=' + count + '&type=' + type;
+	$.getJSON(url)
+		.fail(function() {
+			// TODO handle failure
+		})
+		.done(function(json) {
+			if (json.error !== undefined) {
+				// TODO Error handler
+				return;
+			}
+			$('#' + name + '-table')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
+			$('<tr/>')
+				.appendTo( $('#' + name + '-table') )
+				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-center">creator</th>') )
+				.append( $('<th class="text-center">#</th>') )
+				.append( $('<th class="text-left">filter</th>') );
+			$.each(json.filters, function(index, item) {
+				$('<tr/>')
+					.click(function() {
+						// TODO Error handling
+					})
+					.appendTo( $('#' + name + '-table') )
+					.append( getDate(item.date) )
+					.append( getUser(item.user) )
+					.append( $('<td class="text-center"/>').html( item.count ) )
+					.append( getIconFromFilter(item.spamtype, item.spamtext, item.is_spam) );
+			});
+
+			$('#' + name + '-title').html(json.total + ' ' + type + ' filters');
+			// Back/next buttons
+			if (start >= 10) {
+				$('#' + name + '-back')
+					.removeAttr('disabled')
+					.unbind('click')
+					.click(function() {
+						getFilters(name, type, json.start - 20, json.count);
+					});
+			} else {
+				$('#' + name + '-back')
+					.attr('disabled', 'disabled');
+			}
+			$('#' + name + '-next')
+				.unbind('click')
+				.click(function() {
+					getFilters(name, type, json.start, json.count);
+				});
+		});
+}
+/* Queries for removed posts, adds to table. Handles back/next buttons */
 function getSpam(name, start, count, type, text) {
 	if (start === undefined) start =  0;
 	if (count === undefined) count = 10;
 	$('#' + name + '-table')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
-	var url = window.location.pathname.replace(/\/filters/, '') + 'api.cgi?method=get_spam&start=' + start + '&count=' + count;
+	var url = 'api.cgi?method=get_spam&start=' + start + '&count=' + count;
 	if (type !== undefined && text !== undefined) {
 		url += '&type=' + type + '&text=' + encodeURIComponent(text);
 	}
@@ -291,6 +389,7 @@ function getSpam(name, start, count, type, text) {
 				});
 		});
 }
+
 function getUser(user) {
 	if (user === '') user = '[internal]';
 	var abbr = user
@@ -689,7 +788,7 @@ function setAutoScrolls() {
 }
 
 function setAutocomplete() {
-	var url = window.location.pathname.replace(/\/filters/, '') + 'api.cgi?method=search_filters&q=%QUERY&limit=10';
+	var url = 'api.cgi?method=search_filters&q=%QUERY&limit=10';
 	var temp = '<table><tr><td>';
 	temp += '<span class="glyphicon glyphicon-{{icon}}" title="{{type}} filter"></span>';
 	temp += '</td><td style="padding-left: 10px">';
@@ -723,6 +822,8 @@ function setAutocomplete() {
 }
 
 function createAddSpamFilterPage() {
+	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
+	$('#alt-container').fadeIn(500);
 	$('h1#title')
 		.empty()
 		.append( 'add spam filter' );
@@ -732,12 +833,28 @@ function createAddSpamFilterPage() {
 	var $g = $('<div/>')
 		.addClass('input-group')
 		.appendTo($p);
-	$('<input/>')
+
+	var $input = $('<input/>')
 		.attr('id', 'add-spam-filter')
 		.attr('type', 'text')
 		.attr('placeholder', 'type or paste filter here')
 		.addClass('form-control')
 		.appendTo($g);
+	$input.typeahead({
+				name: 'spam-filters',
+				remote: 'api.cgi?method=search_filters&q=%QUERY&limit=10',
+				template: '<table><tr><td><span class="glyphicon glyphicon-{{icon}}" title="{{type}} filter"></span></td><td style="padding-left: 10px"><a href="#filter={{type}}&text={{text}}">{{text}}</a></td></tr></table>',
+				valueKey: 'text',
+				limit: 10,
+				engine: Hogan,
+				width: '100%'
+		})
+		.addClass('typeahead-lg')
+		.on('typeahead:selected', function($e, datum) {
+			window.location.hash = 'filter=' + datum.type + '&text=' + datum.text;
+			checkForPageChange();
+		});
+
 	var $gb = $('<div/>')
 		.addClass('input-group-btn')
 		.appendTo($g);
@@ -754,40 +871,45 @@ function createAddSpamFilterPage() {
 		.addClass('dropdown-menu pull-right')
 		.appendTo($gb);
 	$('<a/>')
+		.addClass('pull-right')
 		.attr('id', 'filter-add-link')
-		.html('<span class="glyphicon glyphicon-link"></span> link')
+		.html('link filter <span class="glyphicon glyphicon-link"></span>')
 		.click(function() {
 			sendPM('add link: ' + $('input#add-spam-filter').val());
 			$('input#add-spam-filter').val('');
 		})
 		.appendTo( $('<li/>').appendTo($ul) );
 	$('<a/>')
+		.addClass('pull-right')
 		.attr('id', 'filter-add-text')
-		.html('<span class="glyphicon glyphicon-pencil"></span> text')
+		.html('text filter <span class="glyphicon glyphicon-pencil"></span>')
 		.click(function() {
 			sendPM('add text: ' + $('input#add-spam-filter').val());
 			$('input#add-spam-filter').val('');
 		})
 		.appendTo( $('<li/>').appendTo($ul) );
 	$('<a/>')
+		.addClass('pull-right')
 		.attr('id', 'filter-add-user')
-		.html('<span class="glyphicon glyphicon-user"></span> user')
+		.html('user filter <span class="glyphicon glyphicon-user"></span>')
 		.click(function() {
 			sendPM('add user: ' + $('input#add-spam-filter').val());
 			$('input#add-spam-filter').val('');
 		})
 		.appendTo( $('<li/>').appendTo($ul) );
 	$('<a/>')
+		.addClass('pull-right')
 		.attr('id', 'filter-add-tld')
-		.html('<span class="glyphicon glyphicon-globe"></span> tld')
+		.html('tld filter <span class="glyphicon glyphicon-globe"></span>')
 		.click(function() {
 			sendPM('add tld: ' + $('input#add-spam-filter').val());
 			$('input#add-spam-filter').val('');
 		})
 		.appendTo( $('<li/>').appendTo($ul) );
 	$('<a/>')
+		.addClass('pull-right')
 		.attr('id', 'filter-add-thumb')
-		.html('<span class="glyphicon glyphicon-picture"></span> thumb')
+		.html('thumb filter <span class="glyphicon glyphicon-picture"></span>')
 		.click(function() {
 			sendPM('add thumb: ' + $('input#add-spam-filter').val());
 			$('input#add-spam-filter').val('');

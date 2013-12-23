@@ -21,6 +21,7 @@ def main():
 	elif method == 'get_removals':       return get_removals(keys)
 	elif method == 'get_filter_changes': return get_filter_changes(keys)
 	elif method == 'get_filter_info':    return get_filter_info(keys)
+	elif method == 'get_filters':        return get_filters(keys)
 	elif method == 'search_filters':     return search_filters(keys)
 
 def get_scoreboard():
@@ -89,6 +90,75 @@ def get_spam(keys):
 			'removed' : result,
 			'start' : start + count,
 			'count' : count
+		}
+
+def get_filters(keys):
+	if 'type' not in keys:
+		raise Exception('required "type" not found in keys')
+	start = int(keys.get('start',  0))
+	count = int(keys.get('count', 10))
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+
+	total = db.count('filters', 'type = ?', [keys['type']])
+	q = '''
+			select
+				id, type, text, author, active, isspam, created, count(*) as the_count
+				from 
+					filters
+				inner join log_removed
+				on log_removed.filterid = filters.id
+				where type = ?
+				group by log_removed.filterid
+				order by the_count desc
+				limit %d
+				offset %d
+		''' % (count, start)
+	result = []
+	for (filterid, spamtype, spamtext, author, active, isspam, created, removed_count) in \
+			cursor.execute(q, [keys['type']]):
+		if author == '': author = 'internal'
+		result.append({
+			'spamtype' : spamtype,
+			'spamtext' : spamtext,
+			'user'     : author,
+			'active'   : (active == 1),
+			'is_spam'  : (isspam == 1),
+			'count'    : removed_count,
+			'date'     : created
+		})
+	if result == []:
+		q = '''
+				select
+					id, type, text, author, active, isspam, created
+					from 
+						filters
+					where type = ?
+					order by created desc
+					limit %d
+					offset %d
+			''' % (count, start)
+		for (filterid, spamtype, spamtext, author, active, isspam, created) in \
+				cursor.execute(q, [keys['type']]):
+			if author == '': author = 'internal'
+			result.append({
+				'spamtype' : spamtype,
+				'spamtext' : spamtext,
+				'user'     : author,
+				'active'   : (active == 1),
+				'is_spam'  : (isspam == 1),
+				'count'    : 0,
+				'date'     : created
+			})
+		
+	cursor.close()
+	return {
+			'filters' : result,
+			'type'  : keys['type'],
+			'start' : start + count,
+			'count' : count,
+			'total' : total
 		}
 
 def get_filter_info(keys):
