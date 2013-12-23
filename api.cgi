@@ -23,6 +23,7 @@ def main():
 	elif method == 'get_filter_info':    return get_filter_info(keys)
 	elif method == 'get_filters':        return get_filters(keys)
 	elif method == 'search_filters':     return search_filters(keys)
+	elif method == 'get_modded_subs':    return get_modded_subs(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -434,6 +435,29 @@ def search_filters(keys):
 			'icon'   : icon
 		})
 	return result
+
+def get_modded_subs(keys):
+	start = int(keys.get('start',  0))
+	count = int(keys.get('count', 10))
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+	q = '''
+		select subreddit
+		from subs_mod
+		limit %d
+		offset %d
+	''' % (count, start)
+	curexec = cursor.execute(q)
+	result = []
+	for (subreddit,) in curexec:
+		result.append(subreddit)
+	cursor.close()
+	return {
+			'subreddits' : result,
+			'start' : start + len(result),
+			'count' : count
+		}
 
 def get_hr_time(interval):
 	'''

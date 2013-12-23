@@ -15,6 +15,9 @@ $(document).ready(function() {
 	createTable('removed', 'content removals', 'eye-close', 'col-xs-12 col-md-9');
 	getContentRemovals();
 
+	createTable('modded', 'modded subs', 'tower', 'col-xs-6 col-md-3');
+	getModeratedSubreddits();
+
 	setAutoScrolls();
 	setAutocomplete();
 
@@ -600,6 +603,63 @@ function getContentRemovals(start, count) {
 				.unbind('click')
 				.click(function() {
 					getContentRemovals(json.start, json.count);
+				});
+		});
+}
+
+function getModeratedSubreddits(start, count) {
+	if (start === undefined) start =  0;
+	if (count === undefined) count = 10;
+	$('#modded-table')
+		.stop()
+		.animate({opacity : 0.1}, 1000);
+	var url = 'api.cgi?method=get_modded_subs&start=' + start + '&count=' + count;
+	$.getJSON(url)
+		.fail(function() {
+			// TODO handle failure
+		})
+		.done(function(json) {
+			if (json.error !== undefined) {
+				// TODO Error handler
+				return;
+			}
+			$('#modded-table')
+				.empty()
+				.stop()
+				.animate({opacity : 1.0}, 400);
+			$('<tr/>')
+				.appendTo( $('#modded-table') )
+				.append( $('<th class="text-center">subreddit</th>') )
+			$.each(json.subreddits, function(index, item) {
+				$('<tr/>')
+					.appendTo( $('#modded-table') )
+					.append(
+						$('<td class="text-center"/>')
+							.append(
+								$('<a/>')
+									.attr('href', 'http://reddit.com/r/' + item)
+									.attr('target', '_BLANK_' + item)
+									.html('/r/' + item)
+							)
+					)
+			});
+
+			// Back/next buttons
+			if (start >= 10) {
+				$('#modded-back')
+					.removeAttr('disabled')
+					.unbind('click')
+					.click(function() {
+						getModeratedSubreddits(json.start - 20, json.count);
+					});
+			} else {
+				$('#modded-back')
+					.attr('disabled', 'disabled');
+			}
+			$('#modded-next')
+				.unbind('click')
+				.click(function() {
+					getModeratedSubreddits(json.start, json.count);
 				});
 		});
 }
