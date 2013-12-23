@@ -196,12 +196,11 @@ class Rarchives(object):
 
 			# Comment from trusted user/subreddit to imgur album. Looks legit.
 			# Construct comment & reply with post['url']
-			body  = '[**album**](%s) ^\[[**' % post['url']
+			body  = '[**album**^+%d](%s) ^\[[**' % (image_count - child_album_count, post['url'])
 			if 'comments' in post:
 				body += 'post'
 			else:
 				body += 'comment'
-			body += '^+%d' % (image_count - 1)
 			body += '**](%s) ^by ^/u/%s\]' % (post['permalink'], post['author'])
 			try:
 				response = child.reply(body)
