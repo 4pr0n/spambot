@@ -415,9 +415,12 @@ function getIconFromFilter(type, text) {
 				$('<span/>')
 					.addClass('glyphicon')
 					.addClass('glyphicon-' + 
-							type.replace('text',  'pencil')
-									.replace('tld',   'globe')
-									.replace('thumb', 'picture'))
+						type.replace('text',     'pencil')
+						    .replace('tld',      'globe')
+						    .replace('thumb',    'picture')
+						    .replace('tumblr',   'text-width')
+								.replace('blogspot', 'bold')
+					)
 					.attr('title', type)
 		)
 		.append(
