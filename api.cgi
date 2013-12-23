@@ -132,19 +132,19 @@ def get_filters(keys):
 			'count'    : removed_count,
 			'date'     : created
 		})
-	if result == []:
-		q = '''
-				select
-					id, type, text, author, active, isspam, created
-					from 
-						filters
-					where type = ?
-					order by created desc
-					limit %d
-					offset %d
-			''' % (count, start)
-		for (filterid, spamtype, spamtext, author, active, isspam, created) in \
-				cursor.execute(q, [keys['type']]):
+	q = '''
+			select
+				id, type, text, author, active, isspam, created
+				from 
+					filters
+				where type = ?
+				order by created desc
+				limit %d
+				offset %d
+		''' % (count, start)
+	for (filterid, spamtype, spamtext, author, active, isspam, created) in \
+			cursor.execute(q, [keys['type']]):
+		if spamtext not in [x['spamtext'] for x in result]:
 			if author == '': author = 'internal'
 			result.append({
 				'spamtype' : spamtype,
