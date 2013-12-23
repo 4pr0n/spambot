@@ -15,7 +15,7 @@ $(document).ready(function() {
 	createTable('removed', 'content removals', 'eye-close', 'col-xs-12 col-md-9');
 	getContentRemovals();
 
-	createTable('modded', 'moderated subreddits', 'tower', 'col-xs-6 col-md-6');
+	createTable('modded', 'modded subs', 'tower', 'col-xs-12');
 	getModeratedSubreddits();
 
 	setAutoScrolls();
@@ -610,8 +610,9 @@ function getContentRemovals(start, count) {
 }
 
 function getModeratedSubreddits(start, count) {
+	var columns = 3;
 	if (start === undefined) start =  0;
-	if (count === undefined) count = 10;
+	if (count === undefined) count = columns * 10;
 	$('#modded-table')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
@@ -619,10 +620,12 @@ function getModeratedSubreddits(start, count) {
 	$.getJSON(url)
 		.fail(function() {
 			// TODO handle failure
+			console.log('failure!');
 		})
 		.done(function(json) {
 			if (json.error !== undefined) {
 				// TODO Error handler
+				console.log('error: ', json.error);
 				return;
 			}
 			$('#modded-table')
@@ -631,22 +634,26 @@ function getModeratedSubreddits(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#modded-table') )
-				.append( $('<th class="text-center">subreddit</th>') )
-			$.each(json.subreddits, function(index, item) {
-				$('<tr/>')
-					.appendTo( $('#modded-table') )
+				.append( $('<th class="text-center" colspan="' + columns + '">moderated subreddits</th>') );
+			var $tr = $('<tr/>')
+				.appendTo( $('#modded-table') );
+			for (var i = 0; i < json.subreddits.length; i++) {
+				if (i % columns == 0 && i != 0) {
+					$tr = $('<tr/>').appendTo( $('#modded-table') );
+				}
+				var item = json.subreddits[i];
+				console.log('item', item);
+				$('<td class="text-center"/>')
 					.append(
-						$('<td class="text-center"/>')
-							.append(
-								$('<a/>')
-									.attr('href', 'http://reddit.com/r/' + item)
-									.attr('target', '_BLANK_' + item)
-									.html('/r/' + item)
-							)
+						$('<a/>')
+							.attr('href', 'http://reddit.com/r/' + item)
+							.attr('target', '_BLANK_' + item)
+							.html('/r/' + item)
 					)
-			});
+					.appendTo( $tr );
+			}
 
-			$('#modded-title').html(' ' + json.total + ' moderated subreddits');
+			$('#modded-title').html(' ' + json.total + ' modded subs');
 			// Back/next buttons
 			if (start >= 10) {
 				$('#modded-back')
