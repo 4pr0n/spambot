@@ -23,25 +23,17 @@ $(document).ready(function() {
 	checkIsBotActive();
 	setInterval(checkIsBotActive, 10 * 1000);
 
-	$('a#add-spam-filter').click(function() {
-		window.location.hash = 'add';
-		checkForPageChange();
-	});
-
+	// Set click-handlers for nav bar buttons
+	$('a#add-spam-filter'  ).click(function() { window.location.hash = 'add';           checkForPageChange(); });
 	$('a#view-filter-link' ).click(function() { window.location.hash = '#filter=link' ; checkForPageChange(); });
 	$('a#view-filter-text' ).click(function() { window.location.hash = '#filter=text' ; checkForPageChange(); });
 	$('a#view-filter-user' ).click(function() { window.location.hash = '#filter=user' ; checkForPageChange(); });
 	$('a#view-filter-tld'  ).click(function() { window.location.hash = '#filter=tld'  ; checkForPageChange(); });
 	$('a#view-filter-thumb').click(function() { window.location.hash = '#filter=thumb'; checkForPageChange(); });
 	$('a#view-filter-all'  ).click(function() { window.location.hash = '#filter=all'  ; checkForPageChange(); });
-
-	$(window).resize(function() {
-		$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
-	});
-	$('button.navbar-toggle').click(function() {
-		$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
-	});
-	$('#search-filters').css( 'width', ($(window).width() - $('#search-filters').offset().left - 60) + 'px');
+	$('a#view-about-site'  ).click(function() { window.location.hash = '#about=site'  ; checkForPageChange(); });
+	$('a#view-about-mods'  ).click(function() { window.location.hash = '#about=mods'  ; checkForPageChange(); });
+	$('a#view-about-code'  ).click(function() { window.location.hash = '#about=code'  ; checkForPageChange(); });
 
 	checkForPageChange();
 });
@@ -69,12 +61,40 @@ function checkForPageChange() {
 				'scrollTop': $('#spam').offset().top - $('.navbar').height(),
 			}, 500);
 	}
-	else if (window.location.hash !== '#' &&
-			window.location.hash !== '') {
+	else if ('mod' in keys) {
+		if ( !$('#container').is(':visible') ) {
+			// Main page is not visible, make it visible
+			$('#alt-container').stop().hide(200);
+			$('#container').stop().fadeIn(200);
+		}
+		$('html,body')
+			.stop()
+			.animate({
+				'scrollTop': $('#modded').offset().top - $('.navbar').height(),
+			}, 500);
+	}
+	else if ('about' in keys) {
+		if (keys['about'] === 'site') {
+			// Info about the site
+			createAboutSitePage();
+		}
+		else if (keys['about'] === 'mods') {
+			// Info for mods
+			createAboutModsPage();
+		}
+		else if (keys['about'] === 'code') {
+			// Info about source code
+			createAboutCodePage();
+		}
+	}
+	else if ('add' in keys) {
+		createAddSpamFilterPage();
+	}
+	else if ('filter' in keys) {
 		// Mark toolbars as inactive
 		$('a[id^="nav-"]').parent().removeClass('active');
 		// Hide main page
-		$('#container').fadeOut(200);
+		$('#container').stop().fadeOut(200);
 		// Show minipage
 		// Scroll up
 		$('html,body')
@@ -82,60 +102,58 @@ function checkForPageChange() {
 			.animate({
 				'scrollTop': 0,
 			}, 500);
-		if ('filter' in keys) {
-			if ('text' in keys) {
-				$('div#alt-container')
-					.empty()
-					.append(
-						$('<div class="jumbotron"/>')
-							.append( $('<h1/>').attr('id', 'title').html('reddit spam bot') )
-							.append( $('<p/>').attr('id', 'description').html('info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>') )
-					);
-				$('#alt-container')
-					.fadeIn(500);
-				// Get filter info for specific filter, populate main header
-				getFilterInfo(keys['filter'], keys['text']);
-				// Get removals for filter, insert below header
-				createTable('alt-spam', 'spam removed by filter', 'remove', 'col-xs-12', '#alt-container');
-				getSpam('alt-spam', 0, 10, keys['filter'], keys['text'])
-			} else if (keys['filter'] == 'all') {
-				// Display all filters (user/text/link/tld/thumb)
-				$('div#alt-container')
-					.empty()
-					.append(
-						$('<div class="jumbotron"/>')
-							.append( $('<h1/>').attr('id', 'title').html('all spam filters') )
-							.append( $('<p/>').attr('id', 'description').html('below are all spam filters used by the bot to detect and remove spam') )
-					);
-				$('#alt-container')
-					.fadeIn(500);
-				createTable('alt-filter-link',  'link filters',  'link',    'col-xs-12 col-lg-6', '#alt-container');
-				createTable('alt-filter-text',  'text filters',  'pencil',  'col-xs-12 col-lg-6', '#alt-container');
-				createTable('alt-filter-user',  'user filters',  'user',    'col-xs-12 col-lg-6', '#alt-container');
-				createTable('alt-filter-tld',   'tld filters',   'globe',   'col-xs-12 col-lg-6', '#alt-container');
-				createTable('alt-filter-thumb', 'thumb filters', 'picture', 'col-xs-12 col-lg-6', '#alt-container');
-				getFilters('alt-filter-link',  'link');
-				getFilters('alt-filter-text',  'text');
-				getFilters('alt-filter-user',  'user');
-				getFilters('alt-filter-tld',   'tld');
-				getFilters('alt-filter-thumb', 'thumb');
-			} else {
-				// Display just one type of filter (user/text/link/tld/thumb)
-				$('div#alt-container')
-					.empty()
-					.append(
-						$('<div class="jumbotron"/>')
-							.append( $('<h1/>').attr('id', 'title').html(keys['filter'] + ' spam filters') )
-							.append( $('<p/>').attr('id', 'description').html('below are all "' + keys['filter'] + '" filters used to detect and remove spam') )
-					);
-				$('#alt-container')
-					.fadeIn(500);
-				createTable('alt-filter-' + keys['filter'], keys['filter'] + ' filters', 'filter', 'col-xs-12', '#alt-container');
-				getFilters('alt-filter-' + keys['filter'],  keys['filter']);
-			}
-		} else if ('add' in keys) {
-			createAddSpamFilterPage();
+		if ('text' in keys) {
+			$('div#alt-container')
+				.empty()
+				.append(
+					$('<div class="jumbotron"/>')
+						.append( $('<h1/>').attr('id', 'title').html('reddit spam bot') )
+						.append( $('<p/>').attr('id', 'description').html('info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>') )
+				);
+			$('#alt-container').stop().hide().fadeIn(500);
+			// Get filter info for specific filter, populate main header
+			getFilterInfo(keys['filter'], keys['text']);
+			// Get removals for filter, insert below header
+			createTable('alt-spam', 'spam removed by filter', 'remove', 'col-xs-12', '#alt-container');
+			getSpam('alt-spam', 0, 10, keys['filter'], keys['text'])
+		} else if (keys['filter'] == 'all') {
+			// Display all filters (user/text/link/tld/thumb)
+			$('div#alt-container')
+				.empty()
+				.append(
+					$('<div class="jumbotron"/>')
+						.append( $('<h1/>').attr('id', 'title').html('all spam filters') )
+						.append( $('<p/>').attr('id', 'description').html('below are all spam filters used by the bot to detect and remove spam') )
+				);
+			$('#alt-container').stop().hide().fadeIn(500);
+			createTable('alt-filter-link',  'link filters',  'link',    'col-xs-12 col-lg-6', '#alt-container');
+			createTable('alt-filter-text',  'text filters',  'pencil',  'col-xs-12 col-lg-6', '#alt-container');
+			createTable('alt-filter-user',  'user filters',  'user',    'col-xs-12 col-lg-6', '#alt-container');
+			createTable('alt-filter-tld',   'tld filters',   'globe',   'col-xs-12 col-lg-6', '#alt-container');
+			createTable('alt-filter-thumb', 'thumb filters', 'picture', 'col-xs-12 col-lg-6', '#alt-container');
+			getFilters('alt-filter-link',  'link');
+			getFilters('alt-filter-text',  'text');
+			getFilters('alt-filter-user',  'user');
+			getFilters('alt-filter-tld',   'tld');
+			getFilters('alt-filter-thumb', 'thumb');
+		} else {
+			// Display just one type of filter (user/text/link/tld/thumb)
+			$('div#alt-container')
+				.empty()
+				.append(
+					$('<div class="jumbotron"/>')
+						.append( $('<h1/>').attr('id', 'title').html(keys['filter'] + ' spam filters') )
+						.append( $('<p/>').attr('id', 'description').html('below are all "' + keys['filter'] + '" filters used to detect and remove spam') )
+				);
+			$('#alt-container').stop().hide().fadeIn(500);
+			createTable('alt-filter-' + keys['filter'], keys['filter'] + ' filters', 'filter', 'col-xs-12', '#alt-container');
+			getFilters('alt-filter-' + keys['filter'],  keys['filter']);
 		}
+	}
+	else if (window.location.hash !== '' && window.location.hash !== '#') {
+	// Unexpected hash tag. Set the default
+		window.location.hash = '';
+		checkForPageChange();
 	}
 }
 
@@ -825,7 +843,6 @@ function setAutoScrolls() {
 	var navids = [
 		['#nav-home',     'div.jumbotron'],
 		['.navbar-brand', 'div.jumbotron'],
-		['#nav-scores',   '#scores-anchor'],
 		['#nav-spam',     '#spam'],
 		['#nav-graphs',   '#stats-anchor']
 	];
@@ -834,8 +851,8 @@ function setAutoScrolls() {
 			//window.location.hash = '';
 			if ( !$('#container').is(':visible') ) {
 				// Main page is not visible, make it visible
-				$('#alt-container').hide(200);
-				$('#container').fadeIn(200);
+				$('#alt-container').stop().hide(200);
+				$('#container').stop().fadeIn(200);
 			}
 			$('a[id^="nav-"]').parent().removeClass('active');
 			$(this).parent().addClass('active').blur();
@@ -919,8 +936,18 @@ function checkIsBotActive() {
 }
 
 function createAddSpamFilterPage() {
+	$('a[id^="nav-"]').parent().removeClass('active');
+	// Hide main page
+	$('#container').stop().fadeOut(200);
+	// Show minipage
+	// Scroll up
+	$('html,body')
+		.stop()
+		.animate({
+			'scrollTop': 0,
+		}, 500);
 	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
-	$('#alt-container').fadeIn(500);
+	$('#alt-container').stop().hide().fadeIn(500);
 	$('h1#title')
 		.empty()
 		.append( 'add spam filter' );
@@ -1061,3 +1088,123 @@ function createAddSpamFilterPage() {
 		);
 }
 
+function createAboutSitePage() {
+	$('a[id^="nav-"]').parent().removeClass('active');
+	// Hide main page
+	$('#container').stop().fadeOut(200);
+	// Show minipage
+	// Scroll up
+	$('html,body')
+		.stop()
+		.animate({
+			'scrollTop': 0,
+		}, 500);
+	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
+	$('#alt-container').stop().hide().fadeIn(500);
+	$('h1#title')
+		.empty()
+		.append( 'about this site' );
+	var desc = 'this site shows what the automated robot /u/rarchives is doing on reddit';
+	desc += '<p><small>the bot is designed to remove spam and provide links to more images in NSFW subreddits.</small>';
+	var $p = $('p#description')
+		.empty()
+		.html(desc)
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('how does it work?'))
+				.append($('<p class="lead"/>').html('the bot is a moderator on <a href="#mod" onclick="window.location.hash = \'mod\'; checkForPageChange();">numerous subreddits</a>') )
+				.append($('<p class="lead"/>').html('the bot looks at the posts and comments in these subreddits and removes any posts that are considered "spam"') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('what is "spam"?'))
+				.append($('<p class="lead"/>').html('spam is defined by filters which are added by a select-few users') )
+				.append($('<p class="lead"/>').html('these filters can be added at any time and are immediately applied to all subreddits in which the bot moderates') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('is this like AutoModerator?'))
+				.append($('<p class="lead"/>').html('the bot is not affiliated with /u/AutoModerator') )
+				.append($('<p class="lead"/>').html('AutoModerator is great for what it does, but spam moves fast. keeping up with spam across hundreds of subreddits via a wiki config is painful, so this bot was created to alleviate the pain') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('how can I add a filter?'))
+				.append($('<p class="lead"/>').html('submit a post to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a>') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('why the website?'))
+				.append($('<p class="lead"/>').html('the bot takes many actions. the site helps visualize everything that is happening behind the scenes') )
+		);
+	$('#alt-container')
+		.append( $('<div class="col-xs-12">')
+				.append($('<h1/>').html('questions? comments?'))
+				.append($('<p class="lead"/>').html('you can reach the site administators on reddit by sending a message to <a href="http://www.reddit.com/message/compose?to=%2Fr%2FreportthespammersNSFW">/r/ReportTheSpammersNSFW</a>') )
+		);
+}
+
+function createAboutModsPage() {
+	$('a[id^="nav-"]').parent().removeClass('active');
+	// Hide main page
+	$('#container').stop().fadeOut(200);
+	// Show minipage
+	// Scroll up
+	$('html,body')
+		.stop()
+		.animate({
+			'scrollTop': 0,
+		}, 500);
+	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
+	$('#alt-container').stop().hide().fadeIn(500);
+	$('h1#title')
+		.empty()
+		.append( 'information for moderators' );
+	var desc = 'you can employ this bot in your own subreddit by adding reddit user <code>rarchives</code> as a moderator of your subreddit';
+	desc += '<p><small>the bot requires <em>at least</em> <code>post</code> permissions. other features require more privileges</small>';
+	var $p = $('p#description')
+		.empty()
+		.html(desc)
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('features'))
+				.append(
+					$('<p class="lead"/>').append(
+						$('<ul/>')
+							.append( $('<li/>').html('removes spam using a dynamically-updated filter. catches new spam as it\'s rising') )
+							.append( $('<li/>').html('removes reposts from /r/gonewild') )
+							.append( $('<li/>').html('removes "illicit" content known to violate reddit\'s rules on underage or illicit content') )
+					)
+				)
+		);
+}
+
+function createAboutCodePage() {
+	$('a[id^="nav-"]').parent().removeClass('active');
+	$('#container').stop().fadeOut(200);
+	$('html,body')
+		.stop()
+		.animate({
+			'scrollTop': 0,
+		}, 500);
+	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
+	$('#alt-container').stop().hide().fadeIn(500);
+	$('h1#title')
+		.empty()
+		.append( 'source code' );
+	var desc = 'the bot\'s source code and this website are available <strong><a href="https://github.com/4pr0n/spambot" target="_BLANK_GITHUB">on github</a></strong>';
+	var $p = $('p#description')
+		.empty()
+		.html(desc)
+	$('#alt-container')
+		.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('languages'))
+				.append(
+					$('<p class="lead"/>').append(
+						$('<ul/>')
+							.append( $('<li/>').html('bot is written in <a href="http://python.org/">Python</a> (2.7.x flavor)') )
+							.append( $('<li/>').html('website is built on <a href="http://getbootstrap.com/">Bootstrap</a> (3.0), <a href="http://jquery.com/">JQuery</a> (2.x), and <a href="http://www.highcharts.com/">Highcharts</a>') )
+					)
+				)
+		);
+}

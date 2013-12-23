@@ -85,17 +85,17 @@ class Filter(object):
 					continue
 				# Ensure filter does not already exist
 				if db.count('filters', 'type = ? and text = ? and active = 1', [spamtype, spamtext]) > 0:
-					response += '[**!**] Unable to add filter: Filter already exists for %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**!**] Unable to add filter: Filter already exists for [%s filter "%s"](http://spambot.rarchives.com/#filter=%s&text=%s)\n\n' % (spamtype, spamtext, spamtype, spamtext)
 				elif db.count('filters', 'type = ? and text = ? and active = 0', [spamtype, spamtext]) > 0:
 					# Filter exists but is inactive (removed)
 					db.update('filters', 'active = 1', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
-					response += '[**+**] Successfully enabled %s filter "%s"\n\n' % (spamtype, spamtext)
+					response += '[**+**] Successfully enabled [%s filter "%s"](http://spambot.rarchives.com/#filter=%s&text=%s)\n\n' % (spamtype, spamtext, spamtype, spamtext)
 				else:
 					filterid = db.insert('filters', (None, spamtype, spamtext, pm.author, 0, timegm(gmtime()), True, 1 if is_spam else 0))
 					db.insert('log_filters', (filterid, pm.author, 'added', timegm(gmtime())))
-					response += '[**+**] Successfully added %s "%s" to the %s filter\n\n' % (spamtype, spamtext, 'spam' if is_spam else 'remove')
+					response += '[**+**] Successfully added [%s "%s"](http://spambot.rarchives.com/#filter=%s&text=%s) to the %s filter\n\n' % (spamtype, spamtext, spamtype, spamtext, 'spam' if is_spam else 'remove')
 			elif action == 'remove':
 				# Request to remove filter
 				if db.count('filters', 'type = ? and text = ?', [spamtype, spamtext]) == 0:
@@ -106,7 +106,7 @@ class Filter(object):
 					db.update('filters', 'active = 0', 'type = ? and text = ?', [spamtype, spamtext])
 					filterid = db.select_one('id', 'filters', 'type = ? and text = ?', [spamtype, spamtext])
 					db.insert('log_filters', (filterid, pm.author, 'removed', timegm(gmtime())))
-					response += '[**-**] Successfully disabled `%s` filter "`%s`".\n\n' % (spamtype, spamtext)
+					response += '[**-**] Successfully disabled [%s filter "%s"](http://spambot.rarchives.com/#filter=%s&text=%s)\n\n' % (spamtype, spamtext, spamtype, spamtext)
 		if response == '':
 			raise Exception('No response for PM: %s' % str(pm))
 		return response
