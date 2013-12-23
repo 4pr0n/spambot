@@ -828,6 +828,7 @@ function setAutoScrolls() {
 			}
 			$('a[id^="nav-"]').parent().removeClass('active');
 			$(this).parent().addClass('active').blur();
+			$(this).blur();
 			if ( $('.navbar-collapse').hasClass('in') ) {
 				// If navbar is showing, hide it before scrolling
 				$('.navbar-toggle').click();
