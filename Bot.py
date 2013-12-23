@@ -37,7 +37,7 @@ class Bot(object):
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
 
 		if it % 2 == 1:
-			Bot.log('Bot.execute: Checking messages...')
+			#Bot.log('Bot.execute: Checking messages...')
 			if Bot.check_messages():
 				# Got a PM to add/remove filter, need to look back further
 				pages = PAGES_TO_REITERATE 
@@ -124,9 +124,8 @@ class Bot(object):
 				Each post or comment found at 'url'
 		'''
 		page = 0
-		Bot.log('Loading %s' % url)
+		#Bot.log('Loading %s' % url)
 		posts = Reddit.get(url)
-		Bot.log('Loaded')
 		latency = int(strftime('%s', gmtime()))
 		while True:
 			page += 1
@@ -138,7 +137,7 @@ class Bot(object):
 			else:
 				break
 		latency = int(strftime('%s', gmtime())) - latency
-		Bot.log('Post check latency: %ds' % latency)
+		#Bot.log('Post check latency: %ds' % latency)
 
 
 	@staticmethod
