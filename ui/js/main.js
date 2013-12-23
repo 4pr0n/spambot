@@ -902,7 +902,7 @@ function checkIsBotActive() {
 			}
 			$('#status-button')
 				.removeClass()
-				.addClass('btn btn-' + color)
+				.addClass('label label-' + color)
 				.html(stat);
 		});
 }
