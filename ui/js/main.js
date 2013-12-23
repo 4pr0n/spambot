@@ -308,7 +308,7 @@ function getFilters(name, type, start, count) {
 					.append( getIconFromFilter(item.spamtype, item.spamtext, item.is_spam) );
 			});
 
-			$('#' + name + '-title').html(json.total + ' ' + type + ' filters');
+			$('#' + name + '-title').html(' ' + json.total + ' ' + type + ' filters');
 			// Back/next buttons
 			if (start >= 10) {
 				$('#' + name + '-back')

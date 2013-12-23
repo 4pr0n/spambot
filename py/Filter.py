@@ -32,7 +32,7 @@ class Filter(object):
 				Exception if PM should not be replied to
 		'''
 		# Check for moderator invites
-		if pm.has_mod_invite():
+		if type(pm) == Message and pm.has_mod_invite():
 			if not pm.accept_mod_invite():
 				raise Exception('failure when accepting mod invite for /r/%s:\n%s' % (pm.subreddit, str(pm)))
 			if db.count('subs_mod', 'subreddit like ?', [pm.subreddit]) > 0:
