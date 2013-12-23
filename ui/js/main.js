@@ -15,7 +15,7 @@ $(document).ready(function() {
 	createTable('removed', 'content removals', 'eye-close', 'col-xs-12 col-md-9');
 	getContentRemovals();
 
-	createTable('modded', 'modded subs', 'tower', 'col-xs-6 col-md-3');
+	createTable('modded', 'moderated subreddits', 'tower', 'col-xs-6 col-md-6');
 	getModeratedSubreddits();
 
 	setAutoScrolls();
@@ -644,6 +644,7 @@ function getModeratedSubreddits(start, count) {
 					)
 			});
 
+			$('#modded-title').html(' ' + json.total + ' moderated subreddits');
 			// Back/next buttons
 			if (start >= 10) {
 				$('#modded-back')

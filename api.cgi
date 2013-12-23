@@ -442,6 +442,7 @@ def get_modded_subs(keys):
 	from py.DB import DB
 	db = DB()
 	cursor = db.conn.cursor()
+	total = db.count('subs_mod')
 	q = '''
 		select subreddit
 		from subs_mod
@@ -456,7 +457,8 @@ def get_modded_subs(keys):
 	return {
 			'subreddits' : result,
 			'start' : start + len(result),
-			'count' : count
+			'count' : count,
+			'total' : total
 		}
 
 def get_hr_time(interval):
