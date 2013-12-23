@@ -888,7 +888,6 @@ function checkIsBotActive() {
 	$.getJSON('api.cgi?method=get_last_update')
 		.fail(function() { /* TODO */ })
 		.done(function(json) {
-			console.log('json', json);
 			var stat = '', color = '';
 			if (json.diff < 30) {
 				stat = 'active';
