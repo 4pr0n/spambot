@@ -1166,7 +1166,7 @@ function createAboutModsPage() {
 		.empty()
 		.html(desc)
 	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+		.append( $('<div class="col-xs-12">')
 				.append($('<h1/>').html('features'))
 				.append(
 					$('<p class="lead"/>').append(
@@ -1197,7 +1197,7 @@ function createAboutCodePage() {
 		.empty()
 		.html(desc)
 	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+		.append( $('<div class="col-xs-12">')
 				.append($('<h1/>').html('languages'))
 				.append(
 					$('<p class="lead"/>').append(
