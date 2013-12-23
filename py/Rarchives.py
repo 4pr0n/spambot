@@ -33,10 +33,10 @@ class Rarchives(object):
 
 		# Get results from i.rarchives
 		try:
-			log('Rarchives.handle_child: Getting results for %s' % child.url)
+			#log('Rarchives.handle_child: Getting results for %s' % child.url)
 			json = Rarchives.get_results(child.url)
 		except Exception, e:
-			log('Rarchives.get_results: Exception : %s\nwhen querying %s' % (str(e), child.url))
+			log('Rarchives.get_results: Exception: %s\nwhen querying %s' % (str(e), child.url))
 			return
 
 		# Do the thing, checking for removals first
@@ -120,7 +120,7 @@ class Rarchives(object):
 				try:
 					response = child.reply(body)
 					response.distinguish()
-					child.flair('Removed/Gonewild')
+					child.flair('Gonewild repost: /u/%s' % post['author'])
 				except Exception, e:
 					log('Rarchives.gonewild_check: Error while replying to %s : %s' % (child.permalink(), str(e)))
 				# Update 'log_amarch' db table

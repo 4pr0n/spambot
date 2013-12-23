@@ -59,7 +59,7 @@ class Bot(object):
 
 		if it % 60 == 59:
 			Bot.log('Bot.execute: Updating AmateurArchives...')
-			AmArch.execute()
+			AmArch.execute(Bot.db, Bot.log)
 
 
 	@staticmethod
