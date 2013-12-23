@@ -926,7 +926,8 @@ function createAddSpamFilterPage() {
 		.append( 'add spam filter' );
 	var $p = $('p#description')
 		.empty()
-		.append( $('<div class="text-danger text-right"/>').html('note: only admins can add filters') );
+		.append( $('<div class="text-danger text-right"/>').html('<strong>only admins can add filters</strong>') )
+		.append( $('<div class="text-warning text-right"/>').html('if you are not an admin, you can submit<p>a filter to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a>') );
 	var $g = $('<div/>')
 		.addClass('input-group')
 		.appendTo($p);
