@@ -170,7 +170,7 @@ class AmArch(object):
 		'''
 			Updates database with most-recent list of blacklisted users from wiki
 		'''
-		log('AmArch.update_blacklisted_users: Loading blacklist wiki')
+		#log('AmArch.update_blacklisted_users: Loading blacklist wiki')
 		count = 0
 		try:
 			users = AmArch.get_blacklisted_users()
@@ -220,7 +220,7 @@ class AmArch(object):
 		'''
 			Updates database with most-recent list of blacklisted urls from wiki
 		'''
-		log('AmArch.update_blacklisted_urls: Loading blacklist wiki')
+		#log('AmArch.update_blacklisted_urls: Loading blacklist wiki')
 		count = 0
 		try:
 			urls = AmArch.get_blacklisted_urls()

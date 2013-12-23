@@ -5,6 +5,8 @@ from json      import dumps
 from cgi       import FieldStorage # Query keys
 from cgitb     import enable as cgi_enable; cgi_enable() # for debugging
 from urllib    import unquote
+from calendar  import timegm
+from time      import gmtime
 
 def main():
 	'''
@@ -466,10 +468,17 @@ def get_last_update():
 	from py.DB import DB
 	db = DB()
 	last_update = db.get_config('last_update')
+	hr_time = None
+	diff = None
 	if last_update != None:
+		from calendar import timegm; from time import gmtime
 		last_update = int(last_update)
+		diff = timegm(gmtime()) - last_update
+		hr_time = get_hr_time(diff)
 	return {
-		'last_update' : last_update
+		'last_update' : last_update,
+		'diff' : diff,
+		'hr_time' : hr_time
 	}
 	
 

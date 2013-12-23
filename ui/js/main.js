@@ -20,6 +20,8 @@ $(document).ready(function() {
 
 	setAutoScrolls();
 	setAutocomplete();
+	checkIsBotActive();
+	setInterval(checkIsBotActive, 10 * 1000);
 
 	$('a#add-spam-filter').click(function() {
 		window.location.hash = 'add';
@@ -880,6 +882,29 @@ function setAutocomplete() {
 			}, 200);
 		})
 		.css('width', '150px');
+}
+
+function checkIsBotActive() {
+	$.getJSON('api.cgi?method=get_last_update')
+		.fail(function() { /* TODO */ })
+		.done(function(json) {
+			console.log('json', json);
+			var stat = '', color = '';
+			if (json.diff < 30) {
+				stat = 'active';
+				color = 'success';
+			} else if (json.diff < 120) {
+				stat = 'at risk (' + json.hr_time + ')';
+				color = 'warning';
+			} else {
+				stat = 'inactive (' + json.hr_time + ')';
+				color = 'danger';
+			}
+			$('#status-button')
+				.removeClass()
+				.addClass('btn btn-' + color)
+				.html(stat);
+		});
 }
 
 function createAddSpamFilterPage() {

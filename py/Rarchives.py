@@ -186,6 +186,10 @@ class Rarchives(object):
 				 'imgur.com/a/' not in post['url']:
 				continue
 
+			if post['subreddit'].lower() == 'gonewild' and 'comments' not in post:
+				# Comment from gonewild, don't trust it
+				continue
+
 			if db.count('do_not_source', 'url = ?', [post['url']]) > 0:
 					continue
 

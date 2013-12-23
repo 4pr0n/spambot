@@ -10,6 +10,7 @@ from py.Filter    import Filter
 from py.AmArch    import AmArch
 from py.Rarchives import Rarchives
 from time         import strftime, gmtime
+from calendar     import timegm
 from sys          import stderr, exit
 from traceback    import format_exc
 
@@ -34,7 +35,7 @@ class Bot(object):
 		it = Bot.iterations
 
 		# Set update time
-		Bot.db.set_config('last_update', strftime('%s', gmtime()))
+		Bot.db.set_config('last_update', str(timegm(gmtime())) )
 
 		pages = 1
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
@@ -57,11 +58,11 @@ class Bot(object):
 		del children
 
 		if it % 60 == 58:
-			Bot.log('Bot.execute: Updating moderated subreddits...')
+			#Bot.log('Bot.execute: Updating moderated subreddits...')
 			Bot.update_modded_subreddits()
 
 		if it % 60 == 59:
-			Bot.log('Bot.execute: Updating AmateurArchives...')
+			#Bot.log('Bot.execute: Updating AmateurArchives...')
 			AmArch.execute(Bot.db, Bot.log)
 
 

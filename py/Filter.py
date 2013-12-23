@@ -252,7 +252,7 @@ class Filter(object):
 				# Need to check album for spam links
 				httpy = Httpy()
 				try:
-					log('Filter.detect_spam: Checking %s for thumb-spam...' % url)
+					#log('Filter.detect_spam: Checking %s for thumb-spam...' % url)
 					unicode_resp = httpy.get(url)
 					r = unicode_resp.decode('UTF-8').encode('ascii', 'ignore')
 					db.insert('checked_albums', (url,) )
