@@ -244,7 +244,7 @@ function getScoreboard() {
 				.append( $('<th class="text-center">admin</th>') )
 				.append( $('<th class="text-right">score</th>') )
 				.append( $('<th class="text-right">filters</th>') )
-				.append( $('<th class="text-right">%</th>') );
+				.append( $('<th class="text-right">ratio</th>') );
 			// Build scoreboard
 			var totalScore = 0, totalFilters = 0;
 			$.each(json.scoreboard, function(index, item) {
@@ -259,7 +259,7 @@ function getScoreboard() {
 					.append( $( getUser(item.user) ) )
 					.append( $('<td class="text-right"/>').html(item.score) )
 					.append( $('<td class="text-right"/>').html(item.filters) )
-					.append( $('<td class="text-right"/>').html( (item.score / item.filters).toFixed(1) + '%') );
+					.append( $('<td class="text-right"/>').html( (item.score / item.filters).toFixed(1) + '') );
 			});
 			$('<tr/>')
 				.click(function() {
@@ -270,7 +270,7 @@ function getScoreboard() {
 				.append( $('<td/>').addClass('text-center').html('') )
 				.append( $('<td/>').addClass('text-right').html('<strong>' + totalScore + '</strong>') )
 				.append( $('<td/>').addClass('text-right').html('<strong>' + totalFilters + '</strong>') )
-				.append( $('<td/>').addClass('text-right').html('<strong>' + (totalScore / totalFilters).toFixed(1) + '%</strong>'));
+				.append( $('<td/>').addClass('text-right').html('<strong>' + (totalScore / totalFilters).toFixed(1) + '</strong>'));
 			
 		});
 }
@@ -361,7 +361,7 @@ function getSpam(name, start, count, type, text) {
 				.appendTo( $('#' + name + '-table') )
 				.append( $('<th class="text-right">date</th>') )
 				.append( $('<th class="text-center">reddit</th>') )
-				.append( $('<th>thx to</th>') )
+				.append( $('<th class="text-center">thx to</th>') )
 				.append( $('<th class="text-left">filter</th>') );
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
@@ -402,7 +402,7 @@ function getUser(user) {
 		.replace('pervertedbylanguage', 'pervertedby&hellip;')
 		.replace('storm_troopers', 'stormtroopers');
 	return $('<td/>')
-		.addClass('text-left')
+		.addClass('text-center')
 		.html('<small>' + abbr + '</small>' );
 }
 function getIconFromFilter(type, text) {
@@ -442,6 +442,7 @@ function getDeleteIconForFilter(type, text) {
 	return $('<button/>')
 		.attr('type', 'button')
 		.addClass('btn btn-danger btn-xs')
+		.css('float', 'right')
 		.append( $('<span class="glyphicon glyphicon-remove"/>') )
 		.attr('title', 'delete ' + type + ' filter "' + text + '" via a PM to /u/rachives on reddit')
 		.css('margin-left', '5px')
@@ -582,7 +583,7 @@ function getContentRemovals(start, count) {
 			$('<tr/>')
 				.appendTo( $('#removed-table') )
 				.append( $('<th class="text-right">date</th>') )
-				.append( $('<th class="text-left">link</th>') )
+				.append( $('<th class="text-center">link</th>') )
 				.append( $('<th class="text-left">reason</th>') );
 			$.each(json.content_removals, function(index, item) {
 				$('<tr/>')
