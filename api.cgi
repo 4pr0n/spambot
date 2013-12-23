@@ -144,6 +144,7 @@ def get_filters(keys):
 		''' % (count, start)
 	for (filterid, spamtype, spamtext, author, active, isspam, created) in \
 			cursor.execute(q, [keys['type']]):
+		if len(result) >= count: break
 		if spamtext not in [x['spamtext'] for x in result]:
 			if author == '': author = 'internal'
 			result.append({
