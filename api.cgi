@@ -281,12 +281,10 @@ def get_graph(keys):
 		''' % pointStart
 	posts    = [0] * (span + 1)
 	comments = [0] * (span + 1)
-	alltypes = [0] * (span + 1)
 	for (posttype, date) in cursor.execute(q):
 		index = (date - pointStart) / interval
 		if   posttype == 'post':    posts[index]    += 1
 		elif posttype == 'comment': comments[index] += 1
-		alltypes[index] += 1
 	cursor.close()
 	return {
 			'window'   : get_hr_time(span * interval),
@@ -304,11 +302,6 @@ def get_graph(keys):
 					'data'  : comments,
 					'total' : sum(comments)
 				},
-				{
-					'name'  : 'all',
-					'data'  : alltypes,
-					'total' : sum(alltypes)
-				}
 			]
 		}
 
