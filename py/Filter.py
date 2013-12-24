@@ -179,7 +179,7 @@ class Filter(object):
 			raise Exception('%s is already banned by /u/%s' % (child.permalink(), child.banned_by))
 
 		# Check if child author is an approved submitter/moderator
-		if db.count('subs_approved', 'subreddit = ? and username = ?', [child.subreddit, child.author]) > 0:
+		if db.count('subs_approved', 'subreddit like ? and username like ?', [child.subreddit, child.author]) > 0:
 			raise Exception('/u/%s is approved contributor: %s' % (child.author, child.permalink()))
 
 		# Get 'text' and 'urls' from the reddit child
