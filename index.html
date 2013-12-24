@@ -53,7 +53,7 @@
 								<li class="divider"></li>
 								<li><a href="#filter=all"   id="view-filter-all"  ><i class="icon-list-alt"></i><span class="glyphicon glyphicon-filter" ></span> all filters</a></li>
 								<li class="divider"></li>
-								<li><a href="#add" id="add-spam-filter"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-plus"    ></span> add a filter <span class="label label-danger">mod</span></a></li>
+								<li><a href="#add" id="nav-add-filter"><i class="icon-list-alt"></i><span class="glyphicon glyphicon-plus"    ></span> add a filter <span class="label label-danger">mod</span></a></li>
 							</ul>
 						</li>
 
@@ -92,7 +92,7 @@
 			</div><!-- /.container -->
 		</div><!-- /.navbar -->
 
-		<div class="container" id="container">
+		<div class="container" id="container-main">
 
 			<!-- HEADER -->
 			<div class="jumbotron">
@@ -100,37 +100,405 @@
 				<p>info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>
 			</div>
 
-			<!-- SCORES -->
-			<div class="col-xs-12 col-md-5" id="scores-anchor" style="min-height: 500px">
-				<h2><span class="glyphicon glyphicon-user"></span> scoreboard</h2>
-				<p>
-				<table class="table table-striped table-condensed table-hover" id="scoreboard"></table>
-			</div>
+				<!-- SCORES -->
+				<div class="col-xs-12 col-md-5" id="scores" style="min-height: 500px">
+					<h2>
+						<span class="glyphicon glyphicon-user"></span>
+						scoreboard
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="scores-table"></table>
+				</div>
 
-			<!-- GRAPHS -->
-			<div class="col-xs-12 col-md-7" id="stats-anchor" style="min-height: 500px">
-				<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
-				<p>
-				<center>
-					<div class="btn-group">
-						<button type="button" class="btn btn-default" id="graph-6-hours"  title="past 6 hours" >6h</button>
-						<button type="button" class="btn btn-default" id="graph-day"      title="past day"     >1d</button>
-						<button type="button" class="btn btn-default" id="graph-2-days"   title="past 2 days"  >2d</button>
-						<button type="button" class="btn btn-default" id="graph-7-days"   title="past 7 days"  >7d</button>
-						<button type="button" class="btn btn-default" id="graph-month"    title="past month"   >1mo</button>
-						<button type="button" class="btn btn-default" id="graph-6-months" title="past 6 months">6mo</button>
-						<button type="button" class="btn btn-default" id="graph-year"     title="past year"    >1yr</button>
+				<!-- GRAPHS -->
+				<div class="col-xs-12 col-md-7" id="stats" style="min-height: 500px">
+					<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
+					<p>
+					<center>
+						<div class="btn-group">
+							<button type="button" class="btn btn-default btn-sm" id="graph-6-hours"  title="past 6 hours" >6h</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-day"      title="past day"     >1d</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-2-days"   title="past 2 days"  >2d</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-7-days"   title="past 7 days"  >7d</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-month"    title="past month"   >1mo</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-6-months" title="past 6 months">6mo</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-year"     title="past year"    >1yr</button>
+						</div>
+						<div id="graph"></div>
+					</center>
+				</div>
+
+			<div class="row">
+				<!-- SPAM -->
+				<div class="col-xs-12 col-md-6" id="spam">
+					<h2>
+						<span class="glyphicon glyphicon-user"></span>
+						<span id="spam-title">removed spam</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="spam-table"></table>
+					<center>
+						<button class="btn btn-default" id="spam-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="spam-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+
+				<!-- FILTERS -->
+				<div class="col-xs-12 col-md-6" id="filter">
+					<h2>
+						<span class="glyphicon glyphicon-filter"></span>
+						<span id="spam-title">filter changes</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row MAIN:SPAM/FILTERS-->
+
+			<div class="row">
+				<!-- SOURCED -->
+				<div class="col-xs-12 col-md-3" id="sourced">
+					<h2>
+						<span class="glyphicon glyphicon-saved"></span>
+						<span id="spam-title">sourced</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="sourced-table"></table>
+					<center>
+						<button class="btn btn-default" id="sourced-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="sourced-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+
+				<!-- CONTENT REMOVALS -->
+				<div class="col-xs-12 col-md-9" id="removed">
+					<h2>
+						<span class="glyphicon glyphicon-eye-close"></span>
+						<span id="spam-title">content removals</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="removed-table"></table>
+					<center>
+						<button class="btn btn-default" id="removed-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="removed-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row MAIN:SOURCED/CONTENT REMOVALS -->
+
+			<div class="row">
+				<!-- SUBREDDITS -->
+				<div class="col-xs-12" id="modded">
+					<h2>
+						<span class="glyphicon glyphicon-tower"></span>
+						<span id="spam-title">moderated subreddits</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="modded-table"></table>
+					<center>
+						<button class="btn btn-default" id="modded-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="modded-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row MAIN:SUBREDDITS -->
+		</div> <!-- /container-main -->
+
+
+		<!-- SINGLE FILTER PAGE -->
+		<div class="container" id="container-filter-single" style="display: none">
+			<div class="jumbotron">
+				<h1 id="filters">reddit spam bot</h1>
+				<p  id="filters">info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>
+			</div>
+			<div class="row">
+				<!-- SPAM REMOVED BY FILTER -->
+				<div class="col-xs-12" id="filter-spam">
+					<h2>
+						<span class="glyphicon glyphicon-remove"></span>
+						<span id="filter-spam-title">spam removed by filter</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-single-spam-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-single-spam-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-single-spam-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row SPAM REMOVED BY FILTER -->
+		</div> <!-- /container-filters -->
+
+		<!-- FILTER TYPES -->
+		<div class="container" id="container-filter-type" style="display: none">
+			<div class="jumbotron">
+				<h1 id="filters">reddit spam bot</h1>
+				<p  id="filters">info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>
+			</div>
+			<div class="row">
+				<!-- FILTERS -->
+				<div class="col-xs-12" id="filter-link" name="link">
+					<h2>
+						<span class="glyphicon glyphicon-link"></span>
+						<span id="filter-link-title">link filters</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-link-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-link-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-link-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+				<div class="col-xs-12" id="filter-text" name="text">
+					<h2>
+						<span class="glyphicon glyphicon-text"></span>
+						<span id="filter-text-title">text filters</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-text-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-text-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-text-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12" id="filter-user" name="user">
+					<h2>
+						<span class="glyphicon glyphicon-pencil"></span>
+						<span id="filter-user-title">user filters</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-user-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-user-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-user-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+				<div class="col-xs-12" id="filter-tld" name="tld">
+					<h2>
+						<span class="glyphicon glyphicon-globe"></span>
+						<span id="filter-tld-title">tld filters</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-tld-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-tld-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-tld-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12" id="filter-thumb" name="thumb">
+					<h2>
+						<span class="glyphicon glyphicon-picture"></span>
+						<span id="filter-thumb-title">thumb filters</span>
+					</h2>
+					<p>
+					<table class="table table-striped table-condensed table-hover" id="filter-thumb-table"></table>
+					<center>
+						<button class="btn btn-default" id="filter-thumb-back" type="button">
+							<span class="glyphicon glyphicon-chevron-left"></span> back
+						</button>
+						<button class="btn btn-default" id="filter-thumb-next" type="button">
+							next <span class="glyphicon glyphicon-chevron-right"></span>
+						</button>
+					</center>
+				</div>
+			</div> <!-- /row -->
+		</div> <!-- /container-filter-type -->
+
+
+		<!-- ABOUT: SITE -->
+		<div class="container" id="container-about-site" style="display: none">
+			<div class="jumbotron">
+				<h1>about this site</h1>
+				<p>this site shows what the automated robot /u/rarchives is doing on reddit
+				<p><small>the bot is designed to remove spam and provide links to more images in NSFW subreddits.</small>
+			</div>
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>how does it work?</h1>
+					<p class="lead">the bot is a moderator on <a href="#mod" onclick="window.location.hash = 'mod'; checkForPageChange();">numerous subreddits</a>
+					<p class="lead">the bot looks at the posts and comments in these subreddits and removes any posts that are considered "spam"
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<h1>what is "spam"?</h1>
+					<p class="lead">spam is defined by filters which are added by a select-few users
+					<p class="lead">these filters can be added at any time and are immediately applied to all subreddits in which the bot moderates
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>is this like AutoModerator?</h1>
+					<p class="lead">the bot is not affiliated with /u/AutoModerator
+					<p class="lead">AutoModerator is great for what it does, but spam moves fast. keeping up with spam across hundreds of subreddits via a wiki config is painful, so this bot was created to alleviate the pain
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<h1>how can I add a filter?</h1>
+					<p class="lead">submit a post to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a>
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>why the website?</h1>
+					<p class="lead">the bot takes many actions. the site helps visualize everything that is happening behind the scenes
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<h1>questions? comments?</h1>
+					<p class="lead">you can reach the site administators on reddit by sending a message to <a href="http://www.reddit.com/message/compose?to=%2Fr%2FreportthespammersNSFW">/r/ReportTheSpammersNSFW</a>
+				</div>
+			</div> <!-- /row -->
+		</div> <!-- /container-about-site -->
+
+		<div class="container" id="container-filters-add" style="display: none">
+			<div class="jumbotron">
+				<h1>add a spam filter</h1>
+				<p class="text-danger"><strong>only admins can add filters</strong>
+				<p><small>if you are not an admin, you can submit a filter to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a></small>
+				<div class="input-group">
+					<input type="text" class="form-control typeahead-lg" id="add-spam-filter" placeholder="type or paste filter here" autocomplete="off" value="" />
+					<div class="input-group-btn">
+						<button class="btn btn-default dropdown-toggle">add as... <span class="caret"></span></button>
+						<ul class="dropdown-menu pull-right">
+							<a class="pull-right" id="filter-add-link"  onclick="sendPM('add link: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">link filter  <span class="glyphicon glyphicon-link"   ></span></a>
+							<a class="pull-right" id="filter-add-text"  onclick="sendPM('add text: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">text filter  <span class="glyphicon glyphicon-pencil" ></span></a>
+							<a class="pull-right" id="filter-add-user"  onclick="sendPM('add user: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">user filter  <span class="glyphicon glyphicon-user"   ></span></a>
+							<a class="pull-right" id="filter-add-tld"   onclick="sendPM('add tld: '   + $('#add-spam-filter').val(); $('add-spam-filter').val('');">tld filter   <span class="glyphicon glyphicon-globe"  ></span></a>
+							<a class="pull-right" id="filter-add-thumb" onclick="sendPM('add thumb: ' + $('#add-spam-filter').val(); $('add-spam-filter').val('');">thumb filter <span class="glyphicon glyphicon-picture"></span></a>
+						</ul>
 					</div>
-					<div id="graph"></div>
-				</center>
+				</div> <!-- /input-group -->
+			</div> <!-- /jumbotron -->
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>link filters</h1>
+					<p class="lead">looks for text <em>within clickable links</em>
+					<p> <dl><dt>example:</dt> <dd>spammers are submitting posts and/or comments containing <code>http://d1.spamsite.com/blog</code> and <code>http://www.spamsite.com/page</code></dd></dl>
+					<p> <dl><dt>solution:</dt> <dd>add <code>spamsite.com/</code> to the link filter</dd></dl>
+					<p> <dl><dt>input:</dt> <dd> portion of the URL</dd></dl>
+					<p> <dl><dt>checks:</dt> <dd> post URL, post self-text, URLs found in a comment</dd></dl>
+					<p> <dl><dt>does not check:</dt> <dd> anything not starting with <code>http://</code></dd></dl>
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<h1>text filters</h1>
+					<p class="lead">looks for text <em>everywhere</em>
+					<p> <dl><dt>example:</dt> <dd> spammers are linking to <code>/r/spammy_subreddit</code> in post titles and comments</dd></dl>
+					<p> <dl><dt>solution:</dt> <dd> add <code>/r/spammy_subreddit</code> to the text filter</dd></dl>
+					<p> <dl><dt>input:</dt> <dd> portion of a post or comment</dd></dl>
+					<p> <dl><dt>checks:</dt> <dd> post titles, post self-text, post URLs, entire comments</dd></dl>
+					<p> <dl><dt>does not check:</dt> <dd> usernames</dd></dl>
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>user filters</h1>
+					<p class="lead">looks for text <em>matching a user</em>
+					<p> <dl><dt>example:</dt> <dd> user <code>/u/spambob</code> is spamming lots of different sites</dd></dl>
+					<p> <dl><dt>solution:</dt> <dd> add <code>spambob</code> to the user filter</dd></dl>
+					<p> <dl><dt>input:</dt> <dd> full username, case does not matter (<code>SpamBob</code> and <code>spambob</code> are equivalent)</dd></dl>
+					<p> <dl><dt>checks:</dt> <dd> just the username</dd></dl>
+				</div>
+				<div class="col-xs-12 col-md-6">
+					<h1>tld filters</h1>
+					<p class="lead">looks for text <em>in the Top-Level Domain (TLD)</em> of a URL
+					<p> <dl><dt>example:</dt> <dd> we are seeing nothing but spam from sites like <code>imgur.cz</code>, <code>facebook.cz</code>, <code>pornhobbit.cz</code></dd></dl>
+					<p> <dl><dt>solution:</dt> <dd> add <code>cz</code> to the TLD filter</dd></dl>
+					<p> <dl><dt>input:</dt> <dd> just the letters of the TLD (do not include the <code>.</code>)</dd></dl>
+					<p> <dl><dt>checks:</dt> <dd> the last portion of the domain. given <code>a.b.c.d.net</code>, it will check just <code>net</code></dd></dl>
+				</div>
+			</div> <!-- /row -->
+			<div class="row">
+				<div class="col-xs-12 col-md-6">
+					<h1>thumb filters</h1>
+					<p class="lead">looks for text <em>contained within imgur albums</em>
+					<p> <dl><dt>example:</dt> <dd> spammers are submitting links to imgur albums, but the albums are full of links to their spam site <code>freakyfreak.net</code></dd></dl>
+					<p> <dl><dt>solution:</dt> <dd> add <code>freakyfreak.net</code> to the thumb filter</dd></dl>
+					<p> <dl><dt>input:</dt> <dd> text that specifically matches the spam links contained in the imgur album</dd></dl>
+					<p> <dl><dt>checks:</dt> <dd> only text within imgur albums</dd></dl>
+					<p> <dl><dt>does not check:</dt> <dd> albums from other sites</dd></dl>
+				</div>
+			</div> <!-- /row -->
+		</div> <!-- /container-filters-add -->
+
+		<!-- ABOUT: MODS -->
+		<div class="container" id="container-about-mods" style="display: none">
+			<div class="jumbotron">
+				<h1>information for moderators</h1>
+				<p>you can employ this bot in your own subreddit by inviting user <code>rarchives</code> as a moderator
+				<p><small>the bot requires <em>at least</em> <code>post</code> permissions. other features require more privileges</small>
 			</div>
+			<div class="row">
+				<div class="col-xs-12">
+					<h1>features</h1>
+					<ul>
+						<li class="lead"> removes spam using a dynamically-updated filter
+						<li class="lead"> catches new spam as it's rising
+						<li class="lead"> removes reposts from /r/gonewild
+						<li class="lead"> removes "illicit" content known to violate reddit's rules on underage or illicit content
+					</ul>
+				</div>
+			</div> <!-- /row -->
+		</div> <!-- /container-about-mod  -->
 
-			<hr>
-
-		</div> <!-- /container -->
+		<!-- ABOUT: CODE -->
+		<div class="container" id="container-about-code" style="display: none">
+			<div class="jumbotron">
+				<h1>spambot is open-source</h1>
+				<p>the bot's source code and this website are available <strong><a href="https://github.com/4pr0n/spambot" target="_BLANK_GITHUB">on github</a></strong>
+			</div>
+			<div class="row">
+				<div class="col-xs-12">
+					<h1>languages</h1>
+					<ul>
+						<li class="lead"> bot is written in <a href="http://python.org/">Python</a> (2.7.x flavor)
+						<li class="lead"> website is built on <a href="http://getbootstrap.com/">Bootstrap</a> (3.0), <a href="http://jquery.com/">JQuery</a> (2.x), and <a href="http://www.highcharts.com/">Highcharts</a>
+					</ul>
+				</div>
+			</div> <!-- /row -->
+		</div> <!-- /container-about-mod  -->
 
 		<div class="container" id="alt-container" style="display: none">
-			<!-- HEADER -->
 			<div class="jumbotron">
 				<h1 id="title">reddit spam bot</h1>
 				<p id="description">info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>
