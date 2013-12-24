@@ -45,8 +45,8 @@ class Filter(object):
 		if db.count('admins', 'username = ?', [pm.author.lower()]) == 0:
 			# PM is not from an admin. ignore it.
 			raise Exception('PM from *non-admin* /u/%s:\n%s' % (pm.author, pm.body))
-		if pm.subject != 'dowhatisay':
-			raise Exception('PM (not dowhatisay) from *admin* /u/%s:\n%s' % (pm.author, pm.body))
+		if pm.subject != 'dowhatisay' and not pm.subject == 're: dowhatisay':
+			raise Exception('PM (subj: "%s") from *admin* /u/%s:\n%s' % (pm.subject, pm.author, pm.body))
 
 		response = ''
 		for line in pm.body.split('\n'):
