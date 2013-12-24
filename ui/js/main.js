@@ -9,30 +9,51 @@ $(document).ready(function() {
 	getContentRemovals();
 	getModeratedSubreddits();
 
-	setAutoScrolls();
 	setAutocomplete();
-	checkIsBotActive();
-	setInterval(checkIsBotActive, 10 * 1000);
 
-	// Set click-handlers for nav bar buttons
-	$('a#nav-add-filter'   ).click(function() { window.location.hash = 'add';           checkForPageChange(); });
-	$('a#view-filter-link' ).click(function() { window.location.hash = '#filter=link' ; checkForPageChange(); });
-	$('a#view-filter-text' ).click(function() { window.location.hash = '#filter=text' ; checkForPageChange(); });
-	$('a#view-filter-user' ).click(function() { window.location.hash = '#filter=user' ; checkForPageChange(); });
-	$('a#view-filter-tld'  ).click(function() { window.location.hash = '#filter=tld'  ; checkForPageChange(); });
-	$('a#view-filter-thumb').click(function() { window.location.hash = '#filter=thumb'; checkForPageChange(); });
-	$('a#view-filter-all'  ).click(function() { window.location.hash = '#filter=all'  ; checkForPageChange(); });
-	$('a#view-about-site'  ).click(function() { window.location.hash = '#about=site'  ; checkForPageChange(); });
-	$('a#view-about-mods'  ).click(function() { window.location.hash = '#about=mods'  ; checkForPageChange(); });
-	$('a#view-about-code'  ).click(function() { window.location.hash = '#about=code'  ; checkForPageChange(); });
+	setAllRedirects();
 	checkForPageChange();
 
+	// Update status of bot
+	checkIsBotActive();
+	setInterval(checkIsBotActive, 10 * 1000);
 });
 
+/**
+ * Sets up 'redirects' which "reload" the page with a specific hash.
+ */
+function setAllRedirects() {
+	var redirs = [
+		['a#nav-add-filter', 'add'],
+		['a#view-filter-all', 'filter=all'],
+		['a#view-filter-tld', 'filter=tld'],
+		['a#view-filter-link', 'filter=link'],
+		['a#view-filter-text', 'filter=text'],
+		['a#view-filter-user', 'filter=user'],
+		['a#view-filter-thumb', 'filter=thumb'],
+		['a#view-about-site', 'about=site'],
+		['a#view-about-mods', 'about=mods'],
+		['a#view-about-code', 'about=code'],
+		['a.navbar-brand', 'home'],
+		['a#nav-spam', 'spam'],
+		['a#nav-stats', 'stats'],
+	];
+	$.each(redirs, function(index, item) {
+		$(item[0]).click(function() {
+			window.location.hash = item[1];
+			checkForPageChange();
+		});
+	});
+}
+
+/**
+ * Parses the URL's hash and decides what to load.
+ */
 function checkForPageChange() {
 	var keys = getQueryHashKeys();
 	// Hash points to something on the main page (requires scrolling to an element)
 	if (window.location.hash === '' || window.location.hash === '#' ||
+			'home'   in keys ||
 			'stats'  in keys || 
 			'scores' in keys || 
 			'spam'   in keys || 
@@ -44,34 +65,41 @@ function checkForPageChange() {
 			})
 			.stop()
 			.fadeOut(200);
-		$('#container-main').stop().fadeIn(500);
+		if (!$('#container-main').is(':visible')) {
+			$('#container-main')
+				.stop()
+				.fadeIn(500);
+		}
 		// Scroll up
 		var $elem = $('#container-main');
-		if      ('stats'  in keys) { $elem = $('#stats' ); }
-		else if ('scores' in keys) { $elem = $('#scores'); }
-		else if ('spam'   in keys) { $elem = $('#spam'  ); }
-		else if ('mod'    in keys) { $elem = $('#modded'); }
+		if      ('stats'  in keys) { $elem = $('#stats-div' ); }
+		else if ('scores' in keys) { $elem = $('#scores-div'); }
+		else if ('spam'   in keys) { $elem = $('#spam-div'  ); }
+		else if ('mod'    in keys) { $elem = $('#modded-div'); }
 		// If navbar is showing, hide it before scrolling
 		var wait = 0;
 		if ( $('.navbar-collapse').hasClass('in') ) { 
 			$('.navbar-toggle').click();
 			wait = 200;
 		}
-		setTimeout(function() {
-			$('html,body')
-				.stop()
-				.animate({
-					'scrollTop': $elem.offset().top - $('.navbar').height(),
-				}, 500)
+		setTimeout(
+			function() {
+				$('html,body')
+					.stop()
+					.animate({
+						'scrollTop': $elem.offset().top - $('.navbar').height(),
+					}, 500);
 			}, wait);
-
 	}
+
 	else if ('about' in keys) {
 		showPage('container-about-' + keys['about']);
 	}
+
 	else if ('add' in keys) {
 		showPage('container-filters-add');
 	}
+
 	else if ('filter' in keys) {
 		if ('text' in keys) {
 			// Display specific filter
@@ -80,34 +108,36 @@ function checkForPageChange() {
 			getFilterInfo(keys.filter, keys.text);
 			// Get removals for filter
 			getSpam('filter-single-spam', 0, 20, keys.filter, keys.text)
-		} else {
+		}
+		else {
 			// Display one or all filters
 			showPage('container-filter-type');
+			$('div#container-filter-type h1#filters')
+				.html(keys.filter + ' filters');
+			$('div#container-filter-type p#filters')
+				.html('full list of ' + keys.filter + ' filters used by the bot to detect and remove spam');
 			if (keys.filter === 'all') {
 				$('div#container-filter-type div[id^="filter-"]')
 					.stop()
 					.fadeIn(200);
-				$('div#container-filter-type h1#filters')
-					.html('all spam filters');
 				$.each( $('div#container-filter-type table[id^="filter-"]'),
 					function(index, item) {
 						getFilters($(item).parent().attr('id'), $(item).parent().attr('name'), 0, 10);
 					}
 				);
-			} else {
+			}
+			else {
 				$('div#container-filter-type div.row div[id!="filter-' + keys.filter + '"]')
 					.stop()
 					.fadeOut(200);
 				$('div#container-filter-type div.row div#filter-' + keys.filter)
 					.stop()
 					.fadeIn(200);
-				$('div#container-filter-type h1#filters')
-					.html(keys.filter + ' filters');
 				getFilters('filter-' + keys.filter, keys.filter, 0, 20);
 			}
 		}
 	}
-	else if (window.location.hash !== '' && window.location.hash !== '#') {
+	else {
 		// Unexpected hash tag. Set the default
 		window.location.hash = '';
 		checkForPageChange();
@@ -711,8 +741,6 @@ function getGraph(span, interval) {
 					layout: 'horizontal',
 					verticalAlign: 'bottom',
 					align: 'center',
-					itemMarginTop: 10,
-					itemMarginBottom: 10,
 				},
 			
 				credits: {
@@ -723,8 +751,7 @@ function getGraph(span, interval) {
 					position: {
 						align: 'left',
 						x: 10,
-						verticalAlign: 'bottom',
-						y: -15,
+						verticalAlign: 'bottom'
 					},
 				},
 				series: json.series,
@@ -752,47 +779,9 @@ function setGraphButtons() {
 	});
 }
 
-function setAutoScrolls() {
-	var navids = [
-		['#nav-home',     'div.jumbotron'],
-		['.navbar-brand', 'div.jumbotron'],
-		['#nav-spam',     '#spam'],
-		['#nav-graphs',   '#stats']
-	];
-	$.each(navids, function(index, item) {
-		$(item[0]).click(function(e) {
-			$('body .container[id^="container-"]')
-				.filter(function() {
-					return this.id !== 'container-main';
-				})
-				.stop()
-				.fadeOut(200);
-			$('#container-main').stop().fadeIn(500);
-			$('a[id^="nav-"]').parent().removeClass('active');
-			$(this).parent().addClass('active').blur();
-			$(this).blur();
-			if ( $('.navbar-collapse').hasClass('in') ) {
-				// If navbar is showing, hide it before scrolling
-				$('.navbar-toggle').click();
-				setTimeout(function() {
-					$('html,body')
-						.stop()
-						.animate({
-							'scrollTop': $(item[1]).offset().top - $('.navbar').height(),
-						}, 500);
-				}, 250);
-			} else {
-				$('html,body')
-					.stop()
-					.animate({
-						'scrollTop': $(item[1]).offset().top - $('.navbar').height(),
-					}, 500);
-			}
-			return true;
-		});
-	});
-}
-
+/**
+ * Sets up autocomplete for search and add-filter textboxes
+ */
 function setAutocomplete() {
 	var url = 'api.cgi?method=search_filters&q=%QUERY&limit=10';
 	var temp = '<table><tr><td>';
@@ -811,7 +800,7 @@ function setAutocomplete() {
 			}
 		])
 		.on('typeahead:selected', function($e, datum) {
-			$('#search-filters,#add-spam-filter').val('');
+			$('#search-filters,#add-spam-filter').blur().val('');
 			window.location.hash = 'filter=' + datum.type + '&text=' + datum.text;
 			checkForPageChange();
 		})

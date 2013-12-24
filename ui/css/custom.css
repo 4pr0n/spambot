@@ -58,22 +58,34 @@ a {
 h2 {
 	text-align: center;
 }
+div#graph {
+	height: 300px;
+}
+#status-button {
+	float: right;
+	margin-right: -20px;
+}
 
+/* TYPEAHEAD >:O */
 .typeahead,
 .tt-query,
 .tt-hint {
 	width: 100% !important;
 	padding: 4px !important;
+	height: 30px !important;
+	font-size: 14px !important;
 }
 .twitter-typeahead {
 	width: 100% !important;
 }
-.typeahead-lg {
-	height: 38px !important;
-}
 
+#typeahead-lg .twitter-typeahead,
+#typeahead-lg .tt-query,
+#typeahead-lg .tt-hint {
+	height: 35px !important;
+}
 .tt-hint {
-  color: #fff !important;
+  color: rgba(255, 255, 255, 0.0) !important;
 }
 
 .tt-dropdown-menu {
@@ -99,9 +111,12 @@ h2 {
 .tt-suggestion.tt-is-under-cursor {
   color: #fff;
   background-color: #0097cf;
-
+}
+.tt-suggestion.tt-is-under-cursor a {
+	color: #fff;
 }
 
 .tt-suggestion p {
   margin: 0;
 }
+

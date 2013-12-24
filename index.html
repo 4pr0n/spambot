@@ -30,12 +30,12 @@
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 					</button>
-					<a class="navbar-brand" href="./#">spambot</a>
+					<a href="#home" class="navbar-brand">spambot</a>
 				</div>
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li><a href="#stats"   id="nav-graphs" ><span class="glyphicon glyphicon-stats" ></span> stats  </a></li>
-						<li><a href="#spam"    id="nav-spam"   ><span class="glyphicon glyphicon-remove"></span> spam</a></li>
+						<li><a href="#stats" id="nav-stats"><span class="glyphicon glyphicon-stats" ></span> stats</a></li>
+						<li><a href="#spam"  id="nav-spam" ><span class="glyphicon glyphicon-remove"></span> spam </a></li>
 
 						<!-- Filter dropdown -->
 						<li class="dropdown">
@@ -78,7 +78,7 @@
 							<div class="input-group-btn">
 								<button class="btn btn-default btn-sm" type="button"><i class="glyphicon glyphicon-search"></i></button>
 							</div>
-							<input type="text" class="form-control input-sm typeahead" placeholder="search filters" id="search-filters" autocomplete="off" value="">
+							<input type="text" class="form-control input-sm typeahead" placeholder="filter search" id="search-filters" autocomplete="off" value="">
 						</div>
 						</form>
 					</div>
@@ -101,7 +101,7 @@
 			</div>
 
 				<!-- SCORES -->
-				<div class="col-xs-12 col-md-5" id="scores" style="min-height: 500px">
+				<div class="col-xs-12 col-md-5" id="scores-div">
 					<h2>
 						<span class="glyphicon glyphicon-user"></span>
 						scoreboard
@@ -111,18 +111,18 @@
 				</div>
 
 				<!-- GRAPHS -->
-				<div class="col-xs-12 col-md-7" id="stats" style="min-height: 500px">
+				<div class="col-xs-12 col-md-7" id="stats-div">
 					<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
 					<p>
 					<center>
 						<div class="btn-group">
 							<button type="button" class="btn btn-default btn-sm" id="graph-6-hours"  title="past 6 hours" >6h</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-day"      title="past day"     >1d</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-day"      title="past day"     >d</button>
 							<button type="button" class="btn btn-default btn-sm" id="graph-2-days"   title="past 2 days"  >2d</button>
 							<button type="button" class="btn btn-default btn-sm" id="graph-7-days"   title="past 7 days"  >7d</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-month"    title="past month"   >1mo</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-month"    title="past month"   >mo</button>
 							<button type="button" class="btn btn-default btn-sm" id="graph-6-months" title="past 6 months">6mo</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-year"     title="past year"    >1yr</button>
+							<button type="button" class="btn btn-default btn-sm" id="graph-year"     title="past year"    >yr</button>
 						</div>
 						<div id="graph"></div>
 					</center>
@@ -130,7 +130,7 @@
 
 			<div class="row">
 				<!-- SPAM -->
-				<div class="col-xs-12 col-md-6" id="spam">
+				<div class="col-xs-12 col-md-6" id="spam-div">
 					<h2>
 						<span class="glyphicon glyphicon-user"></span>
 						<span id="spam-title">removed spam</span>
@@ -148,10 +148,10 @@
 				</div>
 
 				<!-- FILTERS -->
-				<div class="col-xs-12 col-md-6" id="filter">
+				<div class="col-xs-12 col-md-6" id="filter-div">
 					<h2>
 						<span class="glyphicon glyphicon-filter"></span>
-						<span id="spam-title">filter changes</span>
+						<span id="filter-title">filter changes</span>
 					</h2>
 					<p>
 					<table class="table table-striped table-condensed table-hover" id="filter-table"></table>
@@ -168,10 +168,10 @@
 
 			<div class="row">
 				<!-- SOURCED -->
-				<div class="col-xs-12 col-md-3" id="sourced">
+				<div class="col-xs-12 col-md-3" id="sourced-div">
 					<h2>
 						<span class="glyphicon glyphicon-saved"></span>
-						<span id="spam-title">sourced</span>
+						<span id="sourced-title">sourced</span>
 					</h2>
 					<p>
 					<table class="table table-striped table-condensed table-hover" id="sourced-table"></table>
@@ -186,10 +186,10 @@
 				</div>
 
 				<!-- CONTENT REMOVALS -->
-				<div class="col-xs-12 col-md-9" id="removed">
+				<div class="col-xs-12 col-md-9" id="removed-div">
 					<h2>
 						<span class="glyphicon glyphicon-eye-close"></span>
-						<span id="spam-title">content removals</span>
+						<span id="removed-title">content removals</span>
 					</h2>
 					<p>
 					<table class="table table-striped table-condensed table-hover" id="removed-table"></table>
@@ -206,10 +206,10 @@
 
 			<div class="row">
 				<!-- SUBREDDITS -->
-				<div class="col-xs-12" id="modded">
+				<div class="col-xs-12" id="modded-div">
 					<h2>
 						<span class="glyphicon glyphicon-tower"></span>
-						<span id="spam-title">moderated subreddits</span>
+						<span id="modded-title">moderated subreddits</span>
 					</h2>
 					<p>
 					<table class="table table-striped table-condensed table-hover" id="modded-table"></table>
@@ -396,16 +396,16 @@
 				<h1>add a spam filter</h1>
 				<p class="text-danger"><strong>only admins can add filters</strong>
 				<p><small>if you are not an admin, you can submit a filter to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a></small>
-				<div class="input-group">
+				<div class="input-group" id="typeahead-lg">
 					<input type="text" class="form-control typeahead-lg" id="add-spam-filter" placeholder="type or paste filter here" autocomplete="off" value="" />
 					<div class="input-group-btn">
-						<button class="btn btn-default dropdown-toggle">add as... <span class="caret"></span></button>
+						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" style="top: -8px">add as... <span class="caret"></span></button>
 						<ul class="dropdown-menu pull-right">
-							<a class="pull-right" id="filter-add-link"  onclick="sendPM('add link: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">link filter  <span class="glyphicon glyphicon-link"   ></span></a>
-							<a class="pull-right" id="filter-add-text"  onclick="sendPM('add text: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">text filter  <span class="glyphicon glyphicon-pencil" ></span></a>
-							<a class="pull-right" id="filter-add-user"  onclick="sendPM('add user: '  + $('#add-spam-filter').val(); $('add-spam-filter').val('');">user filter  <span class="glyphicon glyphicon-user"   ></span></a>
-							<a class="pull-right" id="filter-add-tld"   onclick="sendPM('add tld: '   + $('#add-spam-filter').val(); $('add-spam-filter').val('');">tld filter   <span class="glyphicon glyphicon-globe"  ></span></a>
-							<a class="pull-right" id="filter-add-thumb" onclick="sendPM('add thumb: ' + $('#add-spam-filter').val(); $('add-spam-filter').val('');">thumb filter <span class="glyphicon glyphicon-picture"></span></a>
+							<li><a class="pull-right" id="filter-add-link"  onclick="sendPM('add link: '  + $('#add-spam-filter').val()); $('#add-spam-filter').val('');">link filter  <span class="glyphicon glyphicon-link"   ></span></a></li>
+							<li><a class="pull-right" id="filter-add-text"  onclick="sendPM('add text: '  + $('#add-spam-filter').val()); $('#add-spam-filter').val('');">text filter  <span class="glyphicon glyphicon-pencil" ></span></a></li>
+							<li><a class="pull-right" id="filter-add-user"  onclick="sendPM('add user: '  + $('#add-spam-filter').val()); $('#add-spam-filter').val('');">user filter  <span class="glyphicon glyphicon-user"   ></span></a></li>
+							<li><a class="pull-right" id="filter-add-tld"   onclick="sendPM('add tld: '   + $('#add-spam-filter').val()); $('#add-spam-filter').val('');">tld filter   <span class="glyphicon glyphicon-globe"  ></span></a></li>
+							<li><a class="pull-right" id="filter-add-thumb" onclick="sendPM('add thumb: ' + $('#add-spam-filter').val()); $('#add-spam-filter').val('');">thumb filter <span class="glyphicon glyphicon-picture"></span></a></li>
 						</ul>
 					</div>
 				</div> <!-- /input-group -->
@@ -484,8 +484,9 @@
 		<!-- ABOUT: CODE -->
 		<div class="container" id="container-about-code" style="display: none">
 			<div class="jumbotron">
-				<h1>spambot is open-source</h1>
-				<p>the bot's source code and this website are available <strong><a href="https://github.com/4pr0n/spambot" target="_BLANK_GITHUB">on github</a></strong>
+				<h1 class="text-center">spambot is open-source</h1>
+				<p class="text-center">the source code for the bot and this website are available on github
+				<h2><strong><a href="https://github.com/4pr0n/spambot" target="_BLANK_GITHUB">4pr0n/spambot</a></strong></h2>
 			</div>
 			<div class="row">
 				<div class="col-xs-12">
