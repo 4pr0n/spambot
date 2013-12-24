@@ -14,7 +14,7 @@ from calendar     import timegm
 from sys          import stderr, exit
 from traceback    import format_exc
 
-PAGES_TO_REITERATE = 1
+PAGES_TO_REITERATE = 3
 MOD_SUB = 'mod'
 
 class Bot(object):
@@ -35,7 +35,7 @@ class Bot(object):
 		it = Bot.iterations
 
 		# Set update time
-		Bot.db.set_config('last_update', str(timegm(gmtime())) )
+		Bot.update_time()
 
 		pages = 1
 		if it == 1: pages = PAGES_TO_REITERATE # look back on first load
@@ -45,11 +45,14 @@ class Bot(object):
 			if Bot.check_messages():
 				# Got a PM to add/remove filter, need to look back further
 				pages = PAGES_TO_REITERATE 
+			Bot.update_time()
 
 		# Check posts and comments
 		# Removes spam and enforces AmateurArchives rules
 		Bot.handle_url('/r/%s/comments' % MOD_SUB, pages=pages)
+		Bot.update_time()
 		children = Bot.handle_url('/r/%s/new' % MOD_SUB, pages=pages)
+		Bot.update_time()
 
 		# 'children' contains all 'unchecked' posts
 		for child in children:
@@ -60,11 +63,17 @@ class Bot(object):
 		if it % 60 == 58:
 			#Bot.log('Bot.execute: Updating moderated subreddits...')
 			Bot.update_modded_subreddits()
+			Bot.update_time()
 
 		if it % 60 == 59:
 			#Bot.log('Bot.execute: Updating AmateurArchives...')
 			AmArch.execute(Bot.db, Bot.log)
+			Bot.update_time()
 
+
+	@staticmethod
+	def update_time():
+		Bot.db.set_config('last_update', str(timegm(gmtime())) )
 
 	@staticmethod
 	def check_messages():
@@ -136,7 +145,7 @@ class Bot(object):
 			for post in posts:
 				yield post
 			if page < pages:
-				Bot.log('Loading %s (page %d)' % (url, page))
+				#Bot.log('Loading %s (page %d)' % (url, page + 1))
 				posts = Reddit.next()
 			else:
 				break

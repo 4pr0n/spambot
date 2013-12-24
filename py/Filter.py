@@ -61,7 +61,9 @@ class Filter(object):
 				# Not enough fields
 				response += '[**!**] Not enough required fields in line `%s`. Expected 3 or more, got `%d`.\n\n' % (line, len(fields))
 				continue
-			while len(fields) > 3: fields[-1] = fields.pop(-1) + ' ' + fields[-1]
+			while len(fields) > 3:
+				t = fields.pop(-1)
+				fields[-1] += ' ' + t
 			(action, spamtype, spamtext) = fields
 			action = action.replace(':', '')
 			spamtype = spamtype.replace(':', '')
