@@ -27,6 +27,7 @@ def main():
 	elif method == 'search_filters':     return search_filters(keys)
 	elif method == 'get_modded_subs':    return get_modded_subs(keys)
 	elif method == 'get_last_update':    return get_last_update()
+	elif method == 'to_automod':         return to_automod(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -475,6 +476,67 @@ def get_last_update():
 		'hr_time' : hr_time
 	}
 	
+
+def to_automod(keys):
+	from py.DB import DB
+	db = DB()
+	cursor = db.conn.cursor()
+
+	response = []
+
+	texts = []
+	links = []
+	users = []
+	tlds  = []
+	for (spamtype,text) in db.select('type, text', 'filters', 'active = 1 and (type = ? or type = ? or type = ? or type = ?)', ['text', 'link', 'user',' tld']):
+		if   spamtype == 'text': texts.append(text)
+		elif spamtype == 'link': links.append(text)
+		elif spamtype == 'user': users.append(text)
+		elif spamtype == 'tld' : tlds.append(text)
+
+	response.append( '''
+    # TUMBLR - Ignore tumblr links that are not directly to images/videos (e.g. 24.media.tumblr.com)
+    url: "^https?://[a-zA-Z0-9\\\\-]+\\\\.tumblr\\\\.com.*$"
+		modifiers: regex
+		action: spam
+---''' )
+
+	response.append( '''
+    # BLOGSPOT
+    url: "^https?://.*\\\\.blogspot\\\\..*(?!jpg$|png$|gif$|jpeg$|JPG$|PNG$|GIF$|JPEG$)[^.]+$"
+    modifiers: regex
+    action: spam
+----''' )
+
+	response.append( '''
+    # TLD
+    url: "^https?://[a-zA-Z0-9\-\_\.]*\.(%s)(/.*)?$"
+    modifiers: regex
+    action: spam
+---''' % '|'.join(tlds) )
+
+	response.append( '''
+    # USER
+    user: ["%s"]
+    modifiers: [includes, regex: false]
+    action: spam
+---''' % '","'.join(users) )
+
+	response.append( '''
+    # TEXT
+    url+body+title: ["%s"]
+    modifiers: [includes, regex: false]
+    action: spam
+---''' % '","'.join(texts) )
+
+	response.append( '''
+    # LINK
+    url: ["%s"]
+    modifiers: [includes, regex: false]
+    action: spam
+---''' % '","'.join(links) )
+
+	return response
 
 def get_hr_time(interval):
 	'''

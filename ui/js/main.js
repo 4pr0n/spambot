@@ -100,6 +100,10 @@ function checkForPageChange() {
 		showPage('container-filters-add');
 	}
 
+	else if ('automod' in keys) {
+		showPage('container-about-automod');
+		loadAutomodConfig();
+	}
 	else if ('filter' in keys) {
 		if ('text' in keys) {
 			// Display specific filter
@@ -856,4 +860,16 @@ function showPage(id) {
 	$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 	// Show the page
 	$('#' + id).stop().hide().fadeIn(500);
+}
+
+function loadAutomodConfig() {
+	$.getJSON('api.cgi?method=to_automod')
+		.fail(function() { /* TODO */ })
+		.done(function(json) {
+			$('#automod-code').append( $('<code/>').html('---') );
+			for (var i in json) {
+				$('#automod-code')
+					.append( $('<code/>').html(json[i].replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')) );
+			}
+		});
 }
