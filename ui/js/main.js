@@ -67,6 +67,9 @@ function checkForPageChange() {
 			$('#alt-container').stop().hide(200);
 			$('#container').stop().fadeIn(200);
 		}
+		if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+			$('.navbar-toggle').click();
+		}
 		$('html,body')
 			.stop()
 			.animate({
@@ -91,17 +94,12 @@ function checkForPageChange() {
 		createAddSpamFilterPage();
 	}
 	else if ('filter' in keys) {
-		// Mark toolbars as inactive
 		$('a[id^="nav-"]').parent().removeClass('active');
-		// Hide main page
 		$('#container').stop().fadeOut(200);
-		// Show minipage
-		// Scroll up
-		$('html,body')
-			.stop()
-			.animate({
-				'scrollTop': 0,
-			}, 500);
+		if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+			$('.navbar-toggle').click();
+		}
+		$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 		if ('text' in keys) {
 			$('div#alt-container')
 				.empty()
@@ -937,15 +935,11 @@ function checkIsBotActive() {
 
 function createAddSpamFilterPage() {
 	$('a[id^="nav-"]').parent().removeClass('active');
-	// Hide main page
 	$('#container').stop().fadeOut(200);
-	// Show minipage
-	// Scroll up
-	$('html,body')
-		.stop()
-		.animate({
-			'scrollTop': 0,
-		}, 500);
+	if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+		$('.navbar-toggle').click();
+	}
+	$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
 	$('#alt-container').stop().hide().fadeIn(500);
 	$('h1#title')
@@ -1041,64 +1035,64 @@ function createAddSpamFilterPage() {
 		})
 		.appendTo( $('<li/>').appendTo($ul) );
 	$('#alt-container')
-		.append( $('<div class="col-xs-12">')
-				.append($('<h1/>').html('link filter'))
-				.append($('<p/>').html('link filters apply to any text within a link.') )
-				.append($('<p/>').html('only searches through links that contain <code>http://</code>') )
-				.append($('<p/>').html('example:') ) 
-				.append($('<p/>').addClass('lead').html('link filter <code>site.com</code> will detect and remove links to <code>http://site.com/page.jpg</code>, <code>http://website.com</code>, etc.') )
-		);
-	$('#alt-container')
-		.append( 
-			$('<div class="col-xs-12">')
-				.append($('<h1/>').html('text filter'))
-				.append(
-					$('<p/>').html('searches')
-						.append( $('<ul/>')
-							.append( $('<li/>').html('post titles') )
-							.append( $('<li/>').html('post urls') )
-							.append( $('<li/>').html('post selftext') )
-							.append( $('<li/>').html('comment text') )
-						)
-					)
-				.append($('<p/>').html('example:') ) 
-				.append($('<p/>').addClass('lead').html('text filter <code>click here</code> will detect and remove comments that contain <code>click here to see the video!</code>, or <code>if you want a click here\'s your chance</code>, etc; regardless of if the <code>click here</code> is within a link or not.') )
-			);
-						
-	$('#alt-container')
-		.append( $('<div class="col-xs-12">')
-				.append($('<h1/>').html('user filter'))
-				.append($('<p/>').html('matches to a full username, not case sensitive.') )
-				.append($('<p/>').html('example:') ) 
-				.append($('<p/>').addClass('lead').html('<code>ViolentAcrez</code> would detect and remove posts/comments from <code>/u/violentacrez</code> but not <code>/u/violentacrez2</code>') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12">')
-				.append($('<h1/>').html('tld filter'))
-				.append($('<p/>').html('TLD (top-level domain) filters match a link\'s TLD.') )
-				.append($('<p/>').html('example:') ) 
-				.append($('<p/>').addClass('lead').html('the site <code>www.site.ru/index.php</code> has the TLD <code>ru</code>') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12">')
-				.append($('<h1/>').html('thumb filter'))
-				.append($('<p/>').html('targets a specific type of spam: "thumb spam", aka imgur albums that contain links to spam sites. the bot will look inside of each imgur album and detect spammy links within.<p>called <code>thumb spam</code> because initially many spammers had albums with a tiny image and a link that said "click here for a larger image".') )
-				.append($('<p/>').html('example:') ) 
-				.append($('<p/>').addClass('lead').html('an imgur album that contains the text <code>click here!</code> would be removed because (so far) only spammers include this text in their albums') )
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('link filters'))
+				.append($('<p class="lead"/>').html('looks for text <em>within clickable links</em>') )
+				.append($('<p/>').html('<dl><dt>example:</dt> <dd>spammers are submitting posts and/or comments containing <code>http://d1.spamsite.com/blog</code> and <code>http://www.spamsite.com/page</code></dd></dl>') )
+				.append($('<p/>').html('<dl><dt>solution:</dt> <dd>add <code>spamsite.com/</code> to the link filter</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>input:</dt> <dd> portion of the URL</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>checks:</dt> <dd> post URL, post self-text, URLs found in a comment</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>does not check:</dt> <dd> anything not starting with <code>http://</code></dd></dl>') )
+			)
+			.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('text filters'))
+				.append($('<p class="lead"/>').html('looks for text <em>everywhere</em>') )
+				.append($('<p/>').html('<dl><dt>example:</dt> <dd> spammers are linking to <code>/r/spammy_subreddit</code> in post titles and comments</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>solution:</dt> <dd> add <code>/r/spammy_subreddit</code> to the text filter</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>input:</dt> <dd> portion of a post or comment</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>checks:</dt> <dd> post titles, post self-text, post URLs, entire comments</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>does not check:</dt> <dd> usernames</dd></dl>') )
+			)
+		)
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('user filters'))
+				.append($('<p class="lead"/>').html('looks for text <em>matching a user</em>') )
+				.append($('<p/>').html('<dl><dt>example:</dt> <dd> user <code>/u/spambob</code> is spamming lots of different sites</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>solution:</dt> <dd> add <code>spambob</code> to the user filter</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>input:</dt> <dd> full username, case does not matter (<code>SpamBob</code> and <code>spambob</code> are equivalent)</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>checks:</dt> <dd> just the username</dd></dl>') )
+			)
+			.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('tld filters'))
+				.append($('<p class="lead"/>').html('looks for text <em>in the Top-Level Domain (TLD)</em> of a URL') )
+				.append($('<p/>').html('<dl><dt>example:</dt> <dd> we are seeing nothing but spam from sites like <code>imgur.cz</code>, <code>facebook.cz</code>, <code>pornhobbit.cz</code></dd></dl>') )
+				.append($('<p/>').html('<dl><dt>solution:</dt> <dd> add <code>cz</code> to the TLD filter</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>input:</dt> <dd> just the letters of the TLD (do not include the <code>.</code>)</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>checks:</dt> <dd> the last portion of the domain. given <code>a.b.c.d.net</code>, it will check just <code>net</code></dd></dl>') )
+			)
+		)
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
+				.append($('<h1/>').html('thumb filters'))
+				.append($('<p class="lead"/>').html('looks for text <em>contained within imgur albums</em>') )
+				.append($('<p/>').html('<dl><dt>example:</dt> <dd> spammers are submitting links to imgur albums, but the albums are full of links to their spam site <code>freakyfreak.net</code></dd></dl>') )
+				.append($('<p/>').html('<dl><dt>solution:</dt> <dd> add <code>freakyfreak.net</code> to the thumb filter</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>input:</dt> <dd> text that specifically matches the spam links contained in the imgur album</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>checks:</dt> <dd> only text within imgur albums</dd></dl>') )
+				.append($('<p/>').html('<dl><dt>does not check:</dt> <dd> albums from other sites</dd></dl>') )
+			)
 		);
 }
 
 function createAboutSitePage() {
 	$('a[id^="nav-"]').parent().removeClass('active');
-	// Hide main page
 	$('#container').stop().fadeOut(200);
-	// Show minipage
-	// Scroll up
-	$('html,body')
-		.stop()
-		.animate({
-			'scrollTop': 0,
-		}, 500);
+	if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+		$('.navbar-toggle').click();
+	}
+	$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
 	$('#alt-container').stop().hide().fadeIn(500);
 	$('h1#title')
@@ -1110,57 +1104,54 @@ function createAboutSitePage() {
 		.empty()
 		.html(desc)
 	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
-				.append($('<h1/>').html('how does it work?'))
-				.append($('<p class="lead"/>').html('the bot is a moderator on <a href="#mod" onclick="window.location.hash = \'mod\'; checkForPageChange();">numerous subreddits</a>') )
-				.append($('<p class="lead"/>').html('the bot looks at the posts and comments in these subreddits and removes any posts that are considered "spam"') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
+					.append($('<h1/>').html('how does it work?'))
+					.append($('<p class="lead"/>').html('the bot is a moderator on <a href="#mod" onclick="window.location.hash = \'mod\'; checkForPageChange();">numerous subreddits</a>') )
+					.append($('<p class="lead"/>').html('the bot looks at the posts and comments in these subreddits and removes any posts that are considered "spam"') )
+			)
+			.append( $('<div class="col-xs-12 col-md-6">')
 				.append($('<h1/>').html('what is "spam"?'))
 				.append($('<p class="lead"/>').html('spam is defined by filters which are added by a select-few users') )
 				.append($('<p class="lead"/>').html('these filters can be added at any time and are immediately applied to all subreddits in which the bot moderates') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+			)
+		)
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
 				.append($('<h1/>').html('is this like AutoModerator?'))
 				.append($('<p class="lead"/>').html('the bot is not affiliated with /u/AutoModerator') )
 				.append($('<p class="lead"/>').html('AutoModerator is great for what it does, but spam moves fast. keeping up with spam across hundreds of subreddits via a wiki config is painful, so this bot was created to alleviate the pain') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+			)
+			.append( $('<div class="col-xs-12 col-md-6">')
 				.append($('<h1/>').html('how can I add a filter?'))
 				.append($('<p class="lead"/>').html('submit a post to <a href="http://reddit.com/r/reportthespammersNSFW" target="_BLANK_NSFW">/r/ReportTheSpammersNSFW</a>') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12 col-md-6">')
+			)
+		)
+		.append( $('<div class="row"/>')
+			.append( $('<div class="col-xs-12 col-md-6">')
 				.append($('<h1/>').html('why the website?'))
 				.append($('<p class="lead"/>').html('the bot takes many actions. the site helps visualize everything that is happening behind the scenes') )
-		);
-	$('#alt-container')
-		.append( $('<div class="col-xs-12">')
+			)
+			.append( $('<div class="col-xs-12 col-md-6">')
 				.append($('<h1/>').html('questions? comments?'))
 				.append($('<p class="lead"/>').html('you can reach the site administators on reddit by sending a message to <a href="http://www.reddit.com/message/compose?to=%2Fr%2FreportthespammersNSFW">/r/ReportTheSpammersNSFW</a>') )
+			)
 		);
 }
 
 function createAboutModsPage() {
 	$('a[id^="nav-"]').parent().removeClass('active');
-	// Hide main page
 	$('#container').stop().fadeOut(200);
-	// Show minipage
-	// Scroll up
-	$('html,body')
-		.stop()
-		.animate({
-			'scrollTop': 0,
-		}, 500);
+	if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+		$('.navbar-toggle').click();
+	}
+	$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
 	$('#alt-container').stop().hide().fadeIn(500);
 	$('h1#title')
 		.empty()
 		.append( 'information for moderators' );
-	var desc = 'you can employ this bot in your own subreddit by adding reddit user <code>rarchives</code> as a moderator of your subreddit';
+	var desc = 'you can employ this bot in your own subreddit by inviting user <code>rarchives</code> as a moderator';
 	desc += '<p><small>the bot requires <em>at least</em> <code>post</code> permissions. other features require more privileges</small>';
 	var $p = $('p#description')
 		.empty()
@@ -1182,11 +1173,10 @@ function createAboutModsPage() {
 function createAboutCodePage() {
 	$('a[id^="nav-"]').parent().removeClass('active');
 	$('#container').stop().fadeOut(200);
-	$('html,body')
-		.stop()
-		.animate({
-			'scrollTop': 0,
-		}, 500);
+	if ( $('.navbar-collapse').hasClass('in') ) { // If navbar is showing, hide it before scrolling
+		$('.navbar-toggle').click();
+	}
+	$('html,body').stop().animate({ 'scrollTop': 0 }, 500);
 	$('#alt-container div').filter(function() { return !$(this).hasClass('jumbotron') }).remove();
 	$('#alt-container').stop().hide().fadeIn(500);
 	$('h1#title')
