@@ -11,7 +11,7 @@ This is like Auto-Moderator, but auto-updated in real-time.
 
 UI & metrics
 ============
-http://bot.rarchives.com/
+http://spambot.rarchives.com/
 
 
 additional functions
