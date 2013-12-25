@@ -1,50 +1,29 @@
 $(document).ready(function() {
+	// Load appropriate page based on hash
+	checkForPageChange();
+
+	// Retrieve all data for the main page
 	getScoreboard();
 	setGraphButtons();
 	getGraph();
-
 	getSpam('spam');
 	getFilterChanges();
 	getSources();
 	getContentRemovals();
 	getModeratedSubreddits();
 
+	// Prep the search/add textboxes for filter-search autocomplete
 	setAutocomplete();
 
-	setAllRedirects();
-	checkForPageChange();
-
-	// Update status of bot
-	checkIsBotActive();
-	setInterval(checkIsBotActive, 10 * 1000);
+	checkIsBotActive(); // Update status of bot
+	setInterval(checkIsBotActive, 10 * 1000); // Check every 10s
 });
 
-/**
- * Sets up 'redirects' which "reload" the page with a specific hash.
- */
-function setAllRedirects() {
-	var redirs = [
-		['a#nav-add-filter', 'add'],
-		['a#view-filter-all', 'filter=all'],
-		['a#view-filter-tld', 'filter=tld'],
-		['a#view-filter-link', 'filter=link'],
-		['a#view-filter-text', 'filter=text'],
-		['a#view-filter-user', 'filter=user'],
-		['a#view-filter-thumb', 'filter=thumb'],
-		['a#view-about-site', 'about=site'],
-		['a#view-about-mods', 'about=mods'],
-		['a#view-about-code', 'about=code'],
-		['a.navbar-brand', 'home'],
-		['a#nav-spam', 'spam'],
-		['a#nav-stats', 'stats'],
-	];
-	$.each(redirs, function(index, item) {
-		$(item[0]).click(function() {
-			window.location.hash = item[1];
-			checkForPageChange();
-		});
-	});
-}
+$(window).bind('popstate', function(e) {
+	// State changed (hash modified?). Need to load new page
+	checkForPageChange();
+	e.stopPropagation();
+});
 
 /**
  * Parses the URL's hash and decides what to load.
@@ -70,17 +49,16 @@ function checkForPageChange() {
 				.stop()
 				.fadeIn(500);
 		}
-		// Scroll up
-		var $elem = $('#container-main');
+		var $elem = $('#container-main'); // Default element to scroll to is the top
 		if      ('stats'  in keys) { $elem = $('#stats-div' ); }
 		else if ('scores' in keys) { $elem = $('#scores-div'); }
 		else if ('spam'   in keys) { $elem = $('#spam-div'  ); }
 		else if ('mod'    in keys) { $elem = $('#modded-div'); }
-		// If navbar is showing, hide it before scrolling
+		// If navbar is showing, hide it before scrolling (xs view)
 		var wait = 0;
 		if ( $('.navbar-collapse').hasClass('in') ) { 
 			$('.navbar-toggle').click();
-			wait = 200;
+			wait = 300;
 		}
 		setTimeout(
 			function() {
@@ -249,7 +227,6 @@ function getFilters(name, type, start, count) {
 		.stop()
 		.animate({opacity : 0.1}, 1000);
 	var url = 'api.cgi?method=get_filters&start=' + start + '&count=' + count + '&type=' + type;
-	console.log(url);
 	$.getJSON(url)
 		.fail(function() {
 			// TODO handle failure
@@ -265,7 +242,7 @@ function getFilters(name, type, start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#' + name + '-table') )
-				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">time</th>') )
 				.append( $('<th class="text-center">creator</th>') )
 				.append( $('<th class="text-center">#</th>') )
 				.append( $('<th class="text-left">filter</th>') );
@@ -327,7 +304,7 @@ function getSpam(name, start, count, type, text) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#' + name + '-table') )
-				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">time</th>') )
 				.append( $('<th class="text-center">reddit</th>') )
 				.append( $('<th class="text-center">thx to</th>') )
 				.append( $('<th class="text-left">filter</th>') );
@@ -404,16 +381,25 @@ function getIconFromFilter(type, text) {
 						})
 					)
 			)
-		.append(getDeleteIconForFilter(type, text));
+		.append(getDeleteIconForFilter(type, text))
+		// Hide/show button on mouse-over
+		.mouseenter(function() { 
+			$(this).find('button').css('visibility', 'visible');
+		})
+		.mouseleave(function() {
+			$(this).find('button').css('visibility', 'hidden');
+		});
 }
 function getDeleteIconForFilter(type, text) {
 	return $('<button/>')
 		.attr('type', 'button')
 		.addClass('btn btn-danger btn-xs')
-		.css('float', 'right')
+		.css({
+			'margin-left': '5px',
+			'visibility': 'hidden'
+		})
 		.append( $('<span class="glyphicon glyphicon-remove"/>') )
 		.attr('title', 'delete ' + type + ' filter "' + text + '" via a PM to /u/rachives on reddit')
-		.css('margin-left', '5px')
 		.click(function() {
 			sendPM('remove ' + type + ': ' + text);
 		});
@@ -433,6 +419,9 @@ function getRedditLink(permalink, posttype) {
 	if (permalink.indexOf('/r/') >= 0) {
 		txt = permalink.substring(permalink.indexOf('/r/') + 3);
 		txt = txt.substring(0, txt.indexOf('/'));
+		if (txt.length > 8) {
+			txt = txt.substring(0, 6) + '&hellip;';
+		}
 		txt = '<small>' + txt + '</small>';
 	}
 	return $('<td/>')
@@ -458,16 +447,17 @@ function getIconFromAction(action) {
 		);
 }
 function getDate(date) {
-	var d = new Date(date * 1000);
-	var sd = [d.getFullYear(), d.getMonth(), d.getDate()].join('/');
-	sd += ' ';
-	if (d.getHours() < 10) sd += '0';
-	sd += d.getHours() + ':';
-	if (d.getMinutes() < 10) sd += '0';
-	sd += d.getMinutes();
+	var date = new Date(date * 1000);
+	var d = [date.getFullYear(), date.getMonth(), date.getDate()].join('/');
+	var h = '';
+	if (date.getHours() < 10) h += '0';
+	h += date.getHours() + ':';
+	if (date.getMinutes() < 10) h += '0';
+	h += date.getMinutes();
 	return $('<td/>')
 		.addClass('text-right')
-		.html('<small>' + sd + '</small>');
+		.attr('title', d + ' @ ' + h + ' (local time)')
+		.html('<small>' + h + '</small>');
 }
 
 function getFilterChanges(start, count) {
@@ -492,7 +482,7 @@ function getFilterChanges(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#filter-table') )
-				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">time</th>') )
 				.append( $('<th class="text-center">user</th>') )
 				.append( $('<th class="text-center">action</th>') )
 				.append( $('<th class="text-left">filter</th>') );
@@ -550,7 +540,7 @@ function getContentRemovals(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#removed-table') )
-				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">time</th>') )
 				.append( $('<th class="text-center">link</th>') )
 				.append( $('<th class="text-left">reason</th>') );
 			$.each(json.content_removals, function(index, item) {
@@ -582,7 +572,7 @@ function getContentRemovals(start, count) {
 }
 
 function getModeratedSubreddits(start, count) {
-	var columns = 3;
+	var columns = 2;
 	if (start === undefined) start =  0;
 	if (count === undefined) count = columns * 10;
 	$('#modded-table')
@@ -665,7 +655,7 @@ function getSources(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#sourced-table') )
-				.append( $('<th class="text-right">date</th>') )
+				.append( $('<th class="text-right">time</th>') )
 				.append( $('<th class="text-center">link</th>') )
 				//.append( $('<th class="text-left">album</th>') )
 			$.each(json.sources, function(index, item) {
@@ -843,16 +833,16 @@ function checkIsBotActive() {
 		});
 }
 
-
 /**
- * Display new "page". Hides current pages, scrolls up, shows new page
+ * Display new "page" (not the main page).
+ * Hides current pages, scrolls up, shows new page
  */
 function showPage(id) {
 	// Hide existing pages
 	$('body .container[id^="container-"]:visible').stop().fadeOut(200);
 	// Deselect nav-bar
 	$('a[id^="nav-"]').parent().removeClass('active');
-	// Hide drop-down navbar on xs
+	// Hide drop-down navbar (xs view)
 	if ( $('.navbar-collapse').hasClass('in') ) {
 		$('.navbar-toggle').click();
 	}
@@ -866,7 +856,9 @@ function loadAutomodConfig() {
 	$.getJSON('api.cgi?method=to_automod')
 		.fail(function() { /* TODO */ })
 		.done(function(json) {
-			$('#automod-code').append( $('<code/>').html('---') );
+			$('#automod-code')
+				.empty()
+				.append( $('<code/>').html('---') );
 			for (var i in json) {
 				$('#automod-code')
 					.append( $('<code/>').html(json[i].replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')) );
