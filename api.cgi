@@ -28,6 +28,7 @@ def main():
 	elif method == 'get_modded_subs':    return get_modded_subs(keys)
 	elif method == 'get_last_update':    return get_last_update()
 	elif method == 'to_automod':         return to_automod(keys)
+	elif method == 'get_logs':           return get_logs(keys)
 
 def get_scoreboard():
 	from py.DB import DB
@@ -537,6 +538,33 @@ def to_automod(keys):
 ---''' % '","'.join(links) )
 
 	return response
+
+def get_logs(keys):
+	last_lines = tail('history.log', lines=50)
+	return {
+		'logs' : last_lines
+	}
+
+def tail(fname, lines=1, _buffer=4098):
+	from os import SEEK_END
+	f = open(fname, 'r')
+	lines_found = []
+	block_counter = -1
+	while len(lines_found) < lines:
+		try:
+			f.seek(block_counter * _buffer, SEEK_END)
+		except IOError:  # either file is too small, or too many lines requested
+			f.seek(0)
+			lines_found = f.readlines()
+			break
+		lines_found = f.readlines()
+		if len(lines_found) > lines:
+			break
+		block_counter -= 1
+	result = [word for word in lines_found[-lines:]]
+	result.reverse()
+	f.close()
+	return result
 
 def get_hr_time(interval):
 	'''

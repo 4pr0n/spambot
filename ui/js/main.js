@@ -120,6 +120,10 @@ function checkForPageChange() {
 			}
 		}
 	}
+	else if ('log' in keys) {
+		showPage('container-about-logs');
+		getLogs();
+	}
 	else {
 		// Unexpected hash tag. Set the default
 		window.location.hash = '';
@@ -874,5 +878,19 @@ function loadAutomodConfig() {
 				$('#automod-code')
 					.append( $('<code/>').html(json[i].replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')) );
 			}
+		});
+}
+
+function getLogs() {
+	$.getJSON('api.cgi?method=get_logs')
+		.fail(function() { /* TODO */ })
+		.done(function(json) {
+			console.log("GOT EM");
+			$('#log-output')
+				.empty();
+			$.each(json.logs, function(index, line) {
+				$('#log-output')
+					.append( $('<code/>').html( line.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;') ) );
+			});
 		});
 }
