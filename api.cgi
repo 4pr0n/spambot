@@ -488,7 +488,7 @@ def to_automod(keys):
 	links = []
 	users = []
 	tlds  = []
-	for (spamtype,text) in db.select('type, text', 'filters', 'active = 1 and (type = ? or type = ? or type = ? or type = ?)', ['text', 'link', 'user',' tld']):
+	for (spamtype,text) in db.select('type, text', 'filters', 'active = 1 and (type = ? or type = ? or type = ? or type = ?)', ['text', 'link', 'user', 'tld']):
 		if   spamtype == 'text': texts.append(text)
 		elif spamtype == 'link': links.append(text)
 		elif spamtype == 'user': users.append(text)
@@ -497,8 +497,8 @@ def to_automod(keys):
 	response.append( '''
     # TUMBLR - Ignore tumblr links that are not directly to images/videos (e.g. 24.media.tumblr.com)
     url: "^https?://[a-zA-Z0-9\\\\-]+\\\\.tumblr\\\\.com.*$"
-		modifiers: regex
-		action: spam
+    modifiers: regex
+    action: spam
 ---''' )
 
 	response.append( '''
