@@ -562,7 +562,6 @@ def tail(fname, lines=1, _buffer=4098):
 			break
 		block_counter -= 1
 	result = [word for word in lines_found[-lines:]]
-	result.reverse()
 	f.close()
 	return result
 

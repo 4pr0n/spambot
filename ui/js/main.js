@@ -885,12 +885,16 @@ function getLogs() {
 	$.getJSON('api.cgi?method=get_logs')
 		.fail(function() { /* TODO */ })
 		.done(function(json) {
-			console.log("GOT EM");
 			$('#log-output')
 				.empty();
 			$.each(json.logs, function(index, line) {
 				$('#log-output')
 					.append( $('<code/>').html( line.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;') ) );
 			});
+			if ( $('#container-about-logs').is(':visible') ){
+				setTimeout(function() {
+					getLogs();
+				}, 5000);
+			}
 		});
 }
