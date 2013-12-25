@@ -31,6 +31,7 @@ $(window).bind('popstate', function(e) {
 function checkForPageChange() {
 	var keys = getQueryHashKeys();
 	// Hash points to something on the main page (requires scrolling to an element)
+	$('a:focus').blur();
 	if (window.location.hash === '' || window.location.hash === '#' ||
 			'home'   in keys ||
 			'stats'  in keys || 
@@ -185,11 +186,11 @@ function getScoreboard() {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#scores-table') )
-				.append( $('<th class="text-right">#</th>') )
-				.append( $('<th class="text-center">admin</th>') )
-				.append( $('<th class="text-right">score</th>') )
-				.append( $('<th class="text-right">filters</th>') )
-				.append( $('<th class="text-right">ratio</th>') );
+				.append( $('<th class="text-center" width="5%">#</th>') )
+				.append( $('<th class="text-center" width="30%">admin</th>') )
+				.append( $('<th class="text-right"  width="15%">score</th>') )
+				.append( $('<th class="text-right"  width="15%">filters</th>') )
+				.append( $('<th class="text-right"  width="15%">ratio</th>') );
 			// Build scoreboard
 			var totalScore = 0, totalFilters = 0;
 			$.each(json.scoreboard, function(index, item) {
@@ -200,10 +201,10 @@ function getScoreboard() {
 						// TODO Direct to user page
 					})
 					.appendTo( $('#scores-table') )
-					.append( $('<td class="text-right"/>').html(index + 1 ) )
+					.append( $('<td class="text-center"/>').html('<strong>' + (index + 1) + '</strong>' ) )
 					.append( $( getUser(item.user) ) )
-					.append( $('<td class="text-right"/>').html(item.score) )
-					.append( $('<td class="text-right"/>').html(item.filters) )
+					.append( $('<td class="text-right"/>').html( addCommas(item.score) ) )
+					.append( $('<td class="text-right"/>').html( addCommas(item.filters) ) )
 					.append( $('<td class="text-right"/>').html( (item.score / item.filters).toFixed(1) + '') );
 			});
 			$('<tr/>')
@@ -213,11 +214,15 @@ function getScoreboard() {
 				.appendTo( $('#scores-table') )
 				.append( $('<td/>') )
 				.append( $('<td/>').addClass('text-center').html('') )
-				.append( $('<td/>').addClass('text-right').html('<strong>' + totalScore + '</strong>') )
-				.append( $('<td/>').addClass('text-right').html('<strong>' + totalFilters + '</strong>') )
-				.append( $('<td/>').addClass('text-right').html('<strong>' + (totalScore / totalFilters).toFixed(1) + '</strong>'));
+				.append( $('<td/>').addClass('text-right').html('<strong>' + addCommas(totalScore) + '</strong>') )
+				.append( $('<td/>').addClass('text-right').html('<strong>' + addCommas(totalFilters) + '</strong>') )
+				.append( $('<td/>').addClass('text-right').html('<strong>' + (totalScore / totalFilters).toFixed(2) + '</strong>'));
 			
 		});
+}
+
+function addCommas(x) {
+	return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 function getFilters(name, type, start, count) {
@@ -242,7 +247,7 @@ function getFilters(name, type, start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#' + name + '-table') )
-				.append( $('<th class="text-right">time</th>') )
+				.append( $('<th class="text-center">time</th>') )
 				.append( $('<th class="text-center">creator</th>') )
 				.append( $('<th class="text-center">#</th>') )
 				.append( $('<th class="text-left">filter</th>') );
@@ -304,10 +309,10 @@ function getSpam(name, start, count, type, text) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#' + name + '-table') )
-				.append( $('<th class="text-right">time</th>') )
-				.append( $('<th class="text-center">reddit</th>') )
-				.append( $('<th class="text-center">thx to</th>') )
-				.append( $('<th class="text-left">filter</th>') );
+				.append( $('<th class="text-center" width="10%">time</th>') )
+				.append( $('<th class="text-center" width="25%">reddit</th>') )
+				.append( $('<th class="text-center" width="25%">thx to</th>') )
+				.append( $('<th class="text-left"   width="40%">filter</th>') );
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
 					.click(function() {
@@ -352,8 +357,8 @@ function getUser(user) {
 }
 function getIconFromFilter(type, text) {
 	var abbr = text;
-	if (abbr.length > 16) {
-		abbr = abbr.substring(0, 15) + '&hellip;';
+	if (abbr.length > 15) {
+		abbr = abbr.substring(0, 12) + '&hellip;';
 	}
 	return $('<td/>')
 		.append(
@@ -414,15 +419,21 @@ function sendPM(body) {
 	window.open('http://www.reddit.com/message/compose/?' + $.param(params));
 }
 
-function getRedditLink(permalink, posttype) {
+function getRedditLink(permalink, posttype, shorten) {
+	if (shorten === undefined) shorten = true;
 	var txt = posttype.substring(0, 4);
 	if (permalink.indexOf('/r/') >= 0) {
 		txt = permalink.substring(permalink.indexOf('/r/') + 3);
-		txt = txt.substring(0, txt.indexOf('/'));
-		if (txt.length > 8) {
-			txt = txt.substring(0, 6) + '&hellip;';
+		txt = txt.substring(0, txt.indexOf('/')).toLowerCase();
+		if (shorten && txt.length > 12) {
+			txt = txt.substring(0, 9).replace('_', '.') + '&hellip;';
 		}
-		txt = '<small>' + txt + '</small>';
+		var fields = permalink.split('/');
+		var icon = 'comment';
+		if (fields[fields.length-1] === '') {
+			icon = 'pushpin';
+		}
+		txt = '<small>' + txt + '</small> <span class="glyphicon glyphicon-' + icon + '"></span>';
 	}
 	return $('<td/>')
 		.addClass('text-center')
@@ -455,7 +466,7 @@ function getDate(date) {
 	if (date.getMinutes() < 10) h += '0';
 	h += date.getMinutes();
 	return $('<td/>')
-		.addClass('text-right')
+		.addClass('text-center')
 		.attr('title', d + ' @ ' + h + ' (local time)')
 		.html('<small>' + h + '</small>');
 }
@@ -482,10 +493,10 @@ function getFilterChanges(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#filter-table') )
-				.append( $('<th class="text-right">time</th>') )
-				.append( $('<th class="text-center">user</th>') )
-				.append( $('<th class="text-center">action</th>') )
-				.append( $('<th class="text-left">filter</th>') );
+				.append( $('<th class="text-center" width="12%">time</th>') )
+				.append( $('<th class="text-center" width="30%">user</th>') )
+				.append( $('<th class="text-center" width="8%" title="added or removed">±</th>') )
+				.append( $('<th class="text-left"   width="50%">filter</th>') );
 			$.each(json.filter_changes, function(index, item) {
 				$('<tr/>')
 					.click(function() {
@@ -540,15 +551,15 @@ function getContentRemovals(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#removed-table') )
-				.append( $('<th class="text-right">time</th>') )
-				.append( $('<th class="text-center">link</th>') )
-				.append( $('<th class="text-left">reason</th>') );
+				.append( $('<th class="text-center" width="10%">time</th>') )
+				.append( $('<th class="text-center" width="30%">link</th>') )
+				.append( $('<th class="text-left"   width="60">reason</th>') );
 			$.each(json.content_removals, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#removed-table') )
 					.append( getDate(item.date) )
-					.append( getRedditLink(item.permalink, 'post') )
-					.append( $('<td class="text-left text-info" title="' + item.reason.replace(/"/g, '&quot;') + '"/>').html(item.reason.substring(0, 25)  ) );
+					.append( getRedditLink(item.permalink, 'post', false) )
+					.append( $('<td class="text-left text-info" title="' + item.reason.replace(/"/g, '&quot;') + '"/>').html(item.reason.substring(0, 35)  ) );
 			});
 
 			// Back/next buttons
@@ -574,7 +585,7 @@ function getContentRemovals(start, count) {
 function getModeratedSubreddits(start, count) {
 	var columns = 2;
 	if (start === undefined) start =  0;
-	if (count === undefined) count = columns * 10;
+	if (count === undefined) count = columns * 11;
 	$('#modded-table')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
@@ -612,14 +623,14 @@ function getModeratedSubreddits(start, count) {
 					.appendTo( $tr );
 			}
 
-			$('#modded-title').html(' ' + json.total + ' modded subs');
+			$('#modded-title').html(' ' + json.total + ' subs');
 			// Back/next buttons
 			if (start >= 10) {
 				$('#modded-back')
 					.removeAttr('disabled')
 					.unbind('click')
 					.click(function() {
-						getModeratedSubreddits(json.start - 20, json.count);
+						getModeratedSubreddits(json.start - (count * 2), json.count);
 					});
 			} else {
 				$('#modded-back')
@@ -635,7 +646,7 @@ function getModeratedSubreddits(start, count) {
 
 function getSources(start, count) {
 	if (start === undefined) start =  0;
-	if (count === undefined) count = 10;
+	if (count === undefined) count = 11;
 	$('#sourced-table')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
@@ -655,14 +666,14 @@ function getSources(start, count) {
 				.animate({opacity : 1.0}, 400);
 			$('<tr/>')
 				.appendTo( $('#sourced-table') )
-				.append( $('<th class="text-right">time</th>') )
-				.append( $('<th class="text-center">link</th>') )
+				.append( $('<th class="text-center" width="30%">time</th>') )
+				.append( $('<th class="text-center" width="70%">link</th>') )
 				//.append( $('<th class="text-left">album</th>') )
 			$.each(json.sources, function(index, item) {
 				$('<tr/>')
 					.appendTo( $('#sourced-table') )
 					.append( getDate(item.date) )
-					.append( getRedditLink(item.permalink, 'post') )
+					.append( getRedditLink(item.permalink, 'post', false) )
 					//.append( $('<td class="text-left"/>  ').html( $('<a/>').attr('href', item.album).html(item.album) ) );
 			});
 

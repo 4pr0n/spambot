@@ -120,3 +120,7 @@ div#graph {
   margin: 0;
 }
 
+table {
+	table-layout: fixed;
+	overflow: hidden;
+}

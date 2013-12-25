@@ -72,7 +72,7 @@
 					</ul>
 
 					<!-- Search filters -->
-					<div class="col-xs-12 col-sm-3 pull-left">
+					<div class="col-xs-12 col-sm-3 col-md-5 col-lg-6 pull-left">
 						<form class="navbar-form navbar-left" role="search">
 						<div class="input-group">
 							<div class="input-group-btn">
@@ -100,129 +100,123 @@
 				<p>info and statistics for the anti-spam bot <a href="http://reddit.com/u/rarchives">/u/rarchives</a>
 			</div>
 
-				<!-- SCORES -->
-				<div class="col-xs-12 col-md-5" id="scores-div">
-					<h2>
-						<span class="glyphicon glyphicon-user"></span>
-						scoreboard
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="scores-table"></table>
-				</div>
+			<!-- SCORES -->
+			<div class="col-xs-12 col-sm-5 col-md-4" id="scores-div">
+				<h2>
+					<span class="glyphicon glyphicon-user"></span>
+					scoreboard
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="scores-table"></table>
+			</div>
 
-				<!-- GRAPHS -->
-				<div class="col-xs-12 col-md-7" id="stats-div">
-					<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
-					<p>
-					<center>
-						<div class="btn-group">
-							<button type="button" class="btn btn-default btn-sm" id="graph-6-hours"  title="past 6 hours" >6h</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-day"      title="past day"     >d</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-2-days"   title="past 2 days"  >2d</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-7-days"   title="past 7 days"  >7d</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-month"    title="past month"   >mo</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-6-months" title="past 6 months">6mo</button>
-							<button type="button" class="btn btn-default btn-sm" id="graph-year"     title="past year"    >yr</button>
-						</div>
-						<div id="graph"></div>
-					</center>
-				</div>
+			<!-- GRAPHS -->
+			<div class="col-xs-12 col-sm-7 col-md-8" id="stats-div">
+				<h2><span class="glyphicon glyphicon-stats" id="graph-anchor"></span> recent stats <small id="recent-range"></small></h2>
+				<p>
+				<center>
+					<div class="btn-group">
+						<button type="button" class="btn btn-default btn-sm" id="graph-6-hours"  title="past 6 hours" >6h</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-day"      title="past day"     >d</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-2-days"   title="past 2 days"  >2d</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-7-days"   title="past 7 days"  >7d</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-month"    title="past month"   >mo</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-6-months" title="past 6 months">6mo</button>
+						<button type="button" class="btn btn-default btn-sm" id="graph-year"     title="past year"    >yr</button>
+					</div>
+					<div id="graph"></div>
+				</center>
+			</div>
 
-			<div class="row">
-				<!-- SPAM -->
-				<div class="col-xs-12 col-md-6" id="spam-div">
-					<h2>
-						<span class="glyphicon glyphicon-user"></span>
-						<span id="spam-title">removed spam</span>
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="spam-table"></table>
-					<center>
-						<button class="btn btn-default" id="spam-back" type="button">
-							<span class="glyphicon glyphicon-chevron-left"></span> back
-						</button>
-						<button class="btn btn-default" id="spam-next" type="button">
-							next <span class="glyphicon glyphicon-chevron-right"></span>
-						</button>
-					</center>
-				</div>
+			<!-- SPAM -->
+			<div class="col-xs-12 col-md-6 col-lg-5" id="spam-div">
+				<h2>
+					<span class="glyphicon glyphicon-remove"></span>
+					<span id="spam-title">removed spam</span>
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="spam-table"></table>
+				<center>
+					<button class="btn btn-default" id="spam-back" type="button">
+						<span class="glyphicon glyphicon-chevron-left"></span> back
+					</button>
+					<button class="btn btn-default" id="spam-next" type="button">
+						next <span class="glyphicon glyphicon-chevron-right"></span>
+					</button>
+				</center>
+			</div>
 
-				<!-- FILTERS -->
-				<div class="col-xs-12 col-md-6" id="filter-div">
-					<h2>
-						<span class="glyphicon glyphicon-filter"></span>
-						<span id="filter-title">filter changes</span>
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-table"></table>
-					<center>
-						<button class="btn btn-default" id="filter-back" type="button">
-							<span class="glyphicon glyphicon-chevron-left"></span> back
-						</button>
-						<button class="btn btn-default" id="filter-next" type="button">
-							next <span class="glyphicon glyphicon-chevron-right"></span>
-						</button>
-					</center>
-				</div>
-			</div> <!-- /row MAIN:SPAM/FILTERS-->
+			<!-- FILTERS -->
+			<div class="col-xs-12 col-md-6 col-lg-4" id="filter-div">
+				<h2>
+					<span class="glyphicon glyphicon-filter"></span>
+					<span id="filter-title">filter changes</span>
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="filter-table"></table>
+				<center>
+					<button class="btn btn-default" id="filter-back" type="button">
+						<span class="glyphicon glyphicon-chevron-left"></span> back
+					</button>
+					<button class="btn btn-default" id="filter-next" type="button">
+						next <span class="glyphicon glyphicon-chevron-right"></span>
+					</button>
+				</center>
+			</div>
 
-			<div class="row">
-				<!-- SOURCED -->
-				<div class="col-xs-12 col-md-3" id="sourced-div">
-					<h2>
-						<span class="glyphicon glyphicon-saved"></span>
-						<span id="sourced-title">sourced</span>
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="sourced-table"></table>
-					<center>
-						<button class="btn btn-default" id="sourced-back" type="button">
-							<span class="glyphicon glyphicon-chevron-left"></span> back
-						</button>
-						<button class="btn btn-default" id="sourced-next" type="button">
-							next <span class="glyphicon glyphicon-chevron-right"></span>
-						</button>
-					</center>
-				</div>
+			<!-- SOURCED -->
+			<div class="col-xs-12 col-sm-4 col-md-5 col-lg-3" id="sourced-div">
+				<h2>
+					<span class="glyphicon glyphicon-saved"></span>
+					<span id="sourced-title">sourced</span>
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="sourced-table"></table>
+				<center>
+					<button class="btn btn-default" id="sourced-back" type="button">
+						<span class="glyphicon glyphicon-chevron-left"></span> back
+					</button>
+					<button class="btn btn-default" id="sourced-next" type="button">
+						next <span class="glyphicon glyphicon-chevron-right"></span>
+					</button>
+				</center>
+			</div>
 
-				<!-- CONTENT REMOVALS -->
-				<div class="col-xs-12 col-md-9" id="removed-div">
-					<h2>
-						<span class="glyphicon glyphicon-eye-close"></span>
-						<span id="removed-title">content removals</span>
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="removed-table"></table>
-					<center>
-						<button class="btn btn-default" id="removed-back" type="button">
-							<span class="glyphicon glyphicon-chevron-left"></span> back
-						</button>
-						<button class="btn btn-default" id="removed-next" type="button">
-							next <span class="glyphicon glyphicon-chevron-right"></span>
-						</button>
-					</center>
-				</div>
-			</div> <!-- /row MAIN:SOURCED/CONTENT REMOVALS -->
+			<!-- SUBREDDITS -->
+			<div class="col-xs-12 col-sm-8 col-md-7 col-lg-5" id="modded-div">
+				<h2>
+					<span class="glyphicon glyphicon-tower"></span>
+					<span id="modded-title">subs</span>
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="modded-table"></table>
+				<center>
+					<button class="btn btn-default" id="modded-back" type="button">
+						<span class="glyphicon glyphicon-chevron-left"></span> back
+					</button>
+					<button class="btn btn-default" id="modded-next" type="button">
+						next <span class="glyphicon glyphicon-chevron-right"></span>
+					</button>
+				</center>
+			</div>
 
-			<div class="row">
-				<!-- SUBREDDITS -->
-				<div class="col-xs-12" id="modded-div">
-					<h2>
-						<span class="glyphicon glyphicon-tower"></span>
-						<span id="modded-title">moderated subreddits</span>
-					</h2>
-					<p>
-					<table class="table table-striped table-condensed table-hover" id="modded-table"></table>
-					<center>
-						<button class="btn btn-default" id="modded-back" type="button">
-							<span class="glyphicon glyphicon-chevron-left"></span> back
-						</button>
-						<button class="btn btn-default" id="modded-next" type="button">
-							next <span class="glyphicon glyphicon-chevron-right"></span>
-						</button>
-					</center>
-				</div>
-			</div> <!-- /row MAIN:SUBREDDITS -->
+			<!-- CONTENT REMOVALS -->
+			<div class="col-xs-12 col-sm-12 col-md-12 col-lg-7" id="removed-div">
+				<h2>
+					<span class="glyphicon glyphicon-eye-close"></span>
+					<span id="removed-title">content removals</span>
+				</h2>
+				<p>
+				<table class="table table-striped table-condensed table-bordered" id="removed-table"></table>
+				<center>
+					<button class="btn btn-default" id="removed-back" type="button">
+						<span class="glyphicon glyphicon-chevron-left"></span> back
+					</button>
+					<button class="btn btn-default" id="removed-next" type="button">
+						next <span class="glyphicon glyphicon-chevron-right"></span>
+					</button>
+				</center>
+			</div>
 		</div> <!-- /container-main -->
 
 
@@ -240,7 +234,7 @@
 						<span id="filter-spam-title">spam removed by filter</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-single-spam-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-single-spam-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-single-spam-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
@@ -267,7 +261,7 @@
 						<span id="filter-link-title">link filters</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-link-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-link-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-link-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
@@ -283,7 +277,7 @@
 						<span id="filter-text-title">text filters</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-text-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-text-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-text-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
@@ -301,7 +295,7 @@
 						<span id="filter-user-title">user filters</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-user-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-user-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-user-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
@@ -317,7 +311,7 @@
 						<span id="filter-tld-title">tld filters</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-tld-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-tld-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-tld-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
@@ -335,7 +329,7 @@
 						<span id="filter-thumb-title">thumb filters</span>
 					</h2>
 					<p>
-					<table class="table table-striped table-condensed table-hover" id="filter-thumb-table"></table>
+					<table class="table table-striped table-condensed table-bordered" id="filter-thumb-table"></table>
 					<center>
 						<button class="btn btn-default" id="filter-thumb-back" type="button">
 							<span class="glyphicon glyphicon-chevron-left"></span> back
