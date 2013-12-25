@@ -187,8 +187,19 @@ class Bot(object):
 		stderr.write('%s\n' % line)
 		stderr.flush()
 
+	@staticmethod
+	def exit_if_already_started():
+		from commands import getstatusoutput
+		(status, output) = getstatusoutput('ps aux')
+		running_processes = 0
+		for line in output.split('\n'):
+			if 'python' in line and 'Bot.py' in line and not '/bin/sh -c' in line:
+				running_processes += 1
+		if running_processes > 1:
+			exit(0) # Quit silently if the bot is already running
 
 if __name__ == '__main__':
+	Bot.exit_if_already_started()
 	username = Bot.db.get_config('reddit_user')
 	password = Bot.db.get_config('reddit_pw')
 	Bot.log('Bot.main: Logging in to %s...' % username)
