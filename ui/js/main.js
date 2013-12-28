@@ -535,7 +535,7 @@ function getFilterChanges(start, count) {
 
 function getContentRemovals(start, count) {
 	if (start === undefined) start =  0;
-	if (count === undefined) count = 10;
+	if (count === undefined) count = 11;
 	$('#removed-table')
 		.stop()
 		.animate({opacity : 0.1}, 1000);
@@ -572,7 +572,7 @@ function getContentRemovals(start, count) {
 					.removeAttr('disabled')
 					.unbind('click')
 					.click(function() {
-						getContentRemovals(json.start - 20, json.count);
+						getContentRemovals(json.start - (count * 2), json.count);
 					});
 			} else {
 				$('#removed-back')
