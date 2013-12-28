@@ -314,9 +314,9 @@ function getSpam(name, start, count, type, text) {
 			$('<tr/>')
 				.appendTo( $('#' + name + '-table') )
 				.append( $('<th class="text-center" width="10%">time</th>') )
-				.append( $('<th class="text-center" width="25%">reddit</th>') )
+				.append( $('<th class="text-center" width="28%">reddit</th>') )
 				.append( $('<th class="text-center" width="25%">thx to</th>') )
-				.append( $('<th class="text-left"   width="40%">filter</th>') );
+				.append( $('<th class="text-left"   width="37%">filter</th>') );
 			$.each(json.removed, function(index, item) {
 				$('<tr/>')
 					.click(function() {
