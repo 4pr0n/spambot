@@ -12,8 +12,8 @@ from calendar import timegm
 
 class Rarchives(object):
 	
-	TRUSTED_AUTHORS    = ['4_pr0n', 'wakinglife', 'pervertedbylanguage']
-	TRUSTED_SUBREDDITS = ['AmateurArchives', 'UnrealGirls', 'gonewild']
+	TRUSTED_AUTHORS    = ['4_pr0n', 'wakinglife', 'pervertedbylanguage', 'r_fappygood']
+	TRUSTED_SUBREDDITS = ['AmateurArchives', 'UnrealGirls', 'gonewild', 'nsfw_sets']
 
 	@staticmethod
 	def handle_child(child, db, log):
