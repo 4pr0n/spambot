@@ -134,6 +134,7 @@ class Post(Child,object):
 		self.url      = ''
 		self.selftext = None
 		self.title    = ''
+		self.thumbnail = None
 		if json != None:
 			self.from_json(json)
 	def from_json(self, json, modhash=''):
@@ -141,6 +142,7 @@ class Post(Child,object):
 		self.url       = Reddit.asciify(json['url'])
 		self.selftext  = Reddit.asciify(json['selftext']) if json['is_self'] else None
 		self.title     = Reddit.asciify(json['title'])
+		self.thumbnail = json['thumbnail']
 	def permalink(self):
 		if self.subreddit != '':
 			return 'http://reddit.com/r/%s/comments/%s' % (self.subreddit, self.id)
@@ -161,6 +163,20 @@ class Post(Child,object):
 		}
 		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/selectflair', d)
+	def rescrape(self):
+		if self.thumbnail != 'default':
+			# Can't rescrape if it already has a thumbnail
+			return
+		d = {
+			'id'          : 't3_%s' % self.id,
+			'executed'    : 'retrying',
+			'r'           : self.subreddit,
+			'renderstyle' : 'html',
+			'uh'          : self.modhash
+		}
+		Reddit.wait()
+		r = Reddit.httpy.oldpost('http://www.reddit.com/api/rescrape', d)
+
 
 class Comment(Child,object):
 	def __init__(self, json=None, modhash=''):

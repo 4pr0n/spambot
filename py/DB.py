@@ -99,6 +99,10 @@ SCHEMA = {
 		'\n\t' +
 		'url text primary key \n\t',
 
+	'rescraped' : 
+		'\n\t' +
+		'id text primary key \n\t',
+
 	'config' :
 		'\n\t' +
 		'key   text primary key, \n\t' +

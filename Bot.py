@@ -115,6 +115,8 @@ class Bot(object):
 			if Filter.handle_child(child, Bot.db, Bot.log):
 				# Filter removed the child for spam
 				continue
+			# Retry images if necessary
+			Rarchives.rescrape(child, Bot.db, Bot.log)
 			if Bot.db.count('checked_posts', 'postid = ?', [child.id]) == 0:
 				# Has not been checked yet
 				children.append(child)

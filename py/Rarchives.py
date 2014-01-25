@@ -227,6 +227,21 @@ class Rarchives(object):
 		return r.count('src="//i.imgur.com')
 
 
+	@staticmethod
+	def rescrape(child, db, log):
+		'''
+			"Retry thumb" if the post doesn't have a thumbnail
+		'''
+		if type(child) != Post: return                   # Don't scrape comments/messages
+		if child.thumbnail != 'default': return          # Don't scrape if it has a thumbnail
+		if timegm(gmtime()) - child.created < 120: return # Wait at least 2 minutes before rescraping
+		if db.count('rescraped', 'id = ?', [child.id]) > 0: return # Don't rescrape twice
+		db.insert('rescraped', [child.id])
+		db.commit()
+		log('Rarchives.rescrape: Rescraping %s' % child.permalink())
+		child.rescrape()
+
+
 if __name__ == '__main__':
 	print Rarchives.get_image_count_for_album('http://imgur.com/a/erraa/rearrange')
 	#print Rarchives.get_results('http://i.imgur.com/iHjXO.jpg')
