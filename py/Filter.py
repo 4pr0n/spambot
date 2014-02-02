@@ -14,6 +14,7 @@ class Filter(object):
 	ACTIONS = ['add', 'remove']
 	TYPES   = ['link', 'user', 'text', 'tld', 'thumb']
 
+	TLD_WHITELIST = ['mediacru.sh/']
 
 	@staticmethod
 	def parse_pm(pm, db):
@@ -205,6 +206,10 @@ class Filter(object):
 		if len(urls) > 0:
 			tlds = ' ' # Join all TLDs with spaces
 			for url in urls:
+				# Ignore whitelisted sites from TLD filter
+				for tldwhite in Filter.TLD_WHITELIST:
+					if tldwhite in url:
+						continue
 				tld = url.lower().replace('http://', '').replace('https://', '').split('/')[0]
 				tld = tld.split('.')[-1]
 				tlds = '%s%s ' % (tlds, tld)
@@ -384,4 +389,4 @@ class Filter(object):
 if __name__ == '__main__':
 	from DB import DB
 	db = DB()
-	print Filter.sanity_check(db, 'text', 'imgur.com')
+	print Filter.sanity_check(db, 'text', '/reddit.com/r/')
