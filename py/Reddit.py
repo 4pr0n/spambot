@@ -104,7 +104,7 @@ class Child(object):
 		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/remove', d)
 		if r != '{}' and r != '':
-			raise Exception('unexpected response: "%s"' % r)
+			raise Exception('unexpected response removing %s: "%s"' % (this.permalink(), r))
 	def approve(self):
 		d = {
 			'id' : self.full_name(),
