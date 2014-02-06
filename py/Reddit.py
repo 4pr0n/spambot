@@ -103,7 +103,7 @@ class Child(object):
 		}
 		Reddit.wait()
 		r = Reddit.httpy.oldpost('http://www.reddit.com/api/remove', d)
-		if not r == '{}':
+		if r != '{}' and r != '':
 			raise Exception('unexpected response: "%s"' % r)
 	def approve(self):
 		d = {
