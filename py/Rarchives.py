@@ -103,7 +103,7 @@ class Rarchives(object):
 				True if post originated on gonewild, False otherwise.
 		'''
 		# Disable this on /r/AmateurArchives
-		if child.subreddit.lower() == 'amateurarchives': return False
+		if True or child.subreddit.lower() == 'amateurarchives': return False
 
 		# XXX Only enforce posts by gonewild users (not comments)
 		for post in json['posts']:
