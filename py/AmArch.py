@@ -256,6 +256,12 @@ class AmArch(object):
 
 	@staticmethod
 	def fulfill_user_request(child, db, log):
+		'''
+			Rips user via rip.rarchives API
+			Returns:
+				True if request is fulfilled
+				False otherwise
+		'''
 		if not 'u/' in child.title: return False
 
 		# Get user
@@ -267,9 +273,9 @@ class AmArch(object):
 			user += char
 		if len(user) < 3: return False
 
-		# Get GW API url
-		api_url = db.get_config('gw_api_url')
-		api_url += user
+		# Use rip.rarchives to rip album
+		RIP = 'http://rip-devo.rarchives.com'
+		api_url = '%s/api.cgi?method=rip_album&url=gonewild:%s' % (RIP, user)
 
 		# Send request
 		log('AmArch.fulfill_user_request: Fulfilling /u/%s via %s' % (user, api_url))
@@ -283,13 +289,12 @@ class AmArch(object):
 			log('AmArch.fulfill_user_request: Error fulfilling /u/%s: %s' % (user, json['error']))
 			return False
 		if 'count' not in json or \
-		   'url'   not in json or \
-			 'zip'   not in json:
+			 'path'  not in json:
 			log('AmArch.fulfill_user_request: Error fulfilling /u/%s: Missing info in response:\n' % (user, r))
 			return False
 
-		# Reply to child with it
-		body = '[**album**](%s) / [**zip**](%s) ^[%d ^pics]' % (json['url'], json['zip'], json['count'])
+		# Reply to child with the result
+		body = '[**album**](%s/#album=%s) / [**zip**](%s/rips/%s.zip) ^[%d ^pics]' % (RIP, json['path'], RIP, json['path'], json['count'])
 		child.reply(body)
 		child.flair('Bot-Fulfilled (%d)' % json['count'])
 		log('AmArch.fulfill_user_request: Fulfilled /u/%s: %s' % (user, child.permalink()))
