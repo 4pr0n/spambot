@@ -34,8 +34,8 @@ class AmArch(object):
 		if AmArch.is_post_request(child):
 			if not AmArch.is_valid_request(child, db, log):
 				return True
-			if AmArch.fulfill_user_request(child, db, log):
-				return True
+			#if AmArch.fulfill_user_request(child, db, log):
+			#	return True
 
 
 	@staticmethod
@@ -274,7 +274,7 @@ class AmArch(object):
 		if len(user) < 3: return False
 
 		# Use rip.rarchives to rip album
-		RIP = 'http://rip-devo.rarchives.com'
+		RIP = 'http://rip.rarchives.com'
 		api_url = '%s/api.cgi?method=rip_album&url=gonewild:%s' % (RIP, user)
 
 		# Send request
