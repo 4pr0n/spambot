@@ -28,6 +28,7 @@ class Httpy:
 		self.opener  = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
 		self.Request = urllib2.Request
 		self.urlopen = self.opener.open
+		self.timeout = 5
 		
 		if user_agent != None:
 			self.user_agent = user_agent
@@ -44,7 +45,7 @@ class Httpy:
 		try:
 			headers = {'User-agent' : self.user_agent}
 			req = urllib2.Request(url, headers=headers)
-			site = self.urlopen(req)
+			site = self.urlopen(req, timeout=self.timeout)
 			#site = self.urlopen(url)
 		except Exception:
 			return {'content-type': 'unknown', 'content-length': '0'}
@@ -55,7 +56,7 @@ class Httpy:
 		try:
 			headers = {'User-agent' : self.user_agent}
 			req = urllib2.Request(url, headers=headers)
-			site = self.urlopen(req)
+			site = self.urlopen(req, timeout=self.timeout)
 		except urllib2.HTTPError:
 			return url
 		except Exception:
@@ -65,7 +66,7 @@ class Httpy:
 	def check(self, url):
 		""" Check if a URL is valid """
 		try:
-			self.urlopen(url)
+			self.urlopen(url, timeout=self.timeout)
 		except:
 			return False
 		return True
@@ -85,7 +86,7 @@ class Httpy:
 		
 		try:
 			req = urllib2.Request(url, headers=headers)
-			handle = self.urlopen(req)
+			handle = self.urlopen(req, timeout=self.timeout)
 			
 		except Exception, e:
 			if self.debugging: stderr.write('Httpy: Exception while creating request: %s\n' % str(e))
@@ -192,7 +193,7 @@ class Httpy:
 			encoded_data = postdict
 		try:
 			req = self.Request(url, encoded_data, headers)
-			handle = self.urlopen(req)
+			handle = self.urlopen(req, timeout=self.timeout)
 			result = handle.read()
 		except Exception, e:
 			if self.debugging: stderr.write('Httpy.py: Exception: %s: %s\n' % (url, str(e)))
@@ -258,7 +259,7 @@ class Httpy:
 		
 		headers = {'User-agent' : self.user_agent}
 		req = urllib2.Request(url, headers=headers)
-		file_on_web = self.urlopen(req)
+		file_on_web = self.urlopen(req, timeout=self.timeout)
 		while True:
 			buf = file_on_web.read(65536)
 			if len(buf) == 0:
