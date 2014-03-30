@@ -12,7 +12,7 @@ from calendar import timegm
 
 class Rarchives(object):
 	
-	TRUSTED_AUTHORS    = ['4_pr0n', 'wakinglife', 'pervertedbylanguage', 'r_fappygood']
+	TRUSTED_AUTHORS    = ['4_pr0n', 'wakinglife', 'pervertedbylanguage', 'r_fappygood', 'upay46']
 	TRUSTED_SUBREDDITS = ['AmateurArchives', 'UnrealGirls', 'gonewild', 'nsfw_sets']
 
 	@staticmethod

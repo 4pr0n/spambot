@@ -28,7 +28,7 @@ class Httpy:
 		self.opener  = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
 		self.Request = urllib2.Request
 		self.urlopen = self.opener.open
-		self.timeout = 5
+		self.timeout = 20
 		
 		if user_agent != None:
 			self.user_agent = user_agent
