@@ -36,6 +36,7 @@ class AmArch(object):
 				return True
 			#if AmArch.fulfill_user_request(child, db, log):
 			#	return True
+		return False
 
 
 	@staticmethod

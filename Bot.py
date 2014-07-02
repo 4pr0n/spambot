@@ -119,8 +119,8 @@ class Bot(object):
 			Rarchives.rescrape(child, Bot.db, Bot.log)
 			if Bot.db.count('checked_posts', 'postid = ?', [child.id]) == 0:
 				# Has not been checked yet
-				children.append(child)
-				AmArch.handle_child(child, Bot.db, Bot.log)
+				if not AmArch.handle_child(child, Bot.db, Bot.log):
+					children.append(child)
 				Bot.db.insert('checked_posts', (child.id, ))
 				Bot.db.commit()
 		return children
