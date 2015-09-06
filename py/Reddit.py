@@ -56,7 +56,7 @@ class Child(object):
 			'uh' : self.modhash,
 			'id' : self.full_name()
 		}
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/read_message', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/read_message', d)
 		self.new = False
 	
 	# API methods below
@@ -69,7 +69,7 @@ class Child(object):
 			'uh'  : self.modhash
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/vote', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/vote', d)
 		if not r == '{}':
 			raise Exception('unexpected response: "%s"' % r)
 	def reply(self, body):
@@ -80,7 +80,7 @@ class Child(object):
 			'thing_id' : self.full_name()
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/comment', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/comment', d)
 		json = loads(r)['json']
 		if 'errors' in json and len(json['errors']) > 0:
 			raise Exception(str(json['errors']))
@@ -102,7 +102,7 @@ class Child(object):
 			'spam' : str(mark_as_spam)
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/remove', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/remove', d)
 		if r != '{}' and r != '':
 			raise Exception('unexpected response removing %s: "%s"' % (this.permalink(), r))
 	def approve(self):
@@ -111,7 +111,7 @@ class Child(object):
 			'uh' : self.modhash
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/approve', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/approve', d)
 		if not r == '{}':
 			raise Exception('unexpected response: "%s"' % r)
 	def distinguish(self, remove=False):
@@ -122,7 +122,7 @@ class Child(object):
 			'how' : 'no' if remove else 'yes'
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/distinguish', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/distinguish', d)
 		if not 'errors": []' in r:
 			raise Exception('unexpected response: "%s"' % r)
 
@@ -145,9 +145,9 @@ class Post(Child,object):
 		self.thumbnail = json['thumbnail']
 	def permalink(self):
 		if self.subreddit != '':
-			return 'http://reddit.com/r/%s/comments/%s' % (self.subreddit, self.id)
+			return 'https://reddit.com/r/%s/comments/%s' % (self.subreddit, self.id)
 		else:
-			return 'http://reddit.com/comments/%s' % self.id
+			return 'https://reddit.com/comments/%s' % self.id
 	def flair(self, text):
 		d = {
 			'executed' : 'unmarked',
@@ -162,7 +162,7 @@ class Post(Child,object):
 			'renderstyle' : 'html'
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/selectflair', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/selectflair', d)
 	def rescrape(self):
 		if self.thumbnail != 'default':
 			# Can't rescrape if it already has a thumbnail
@@ -175,7 +175,7 @@ class Post(Child,object):
 			'uh'          : self.modhash
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/rescrape', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/rescrape', d)
 
 
 class Comment(Child,object):
@@ -196,9 +196,9 @@ class Comment(Child,object):
 			self.post_id = json['context'].split('/')[4]
 	def permalink(self):
 		if self.subreddit != '':
-			return 'http://reddit.com/r/%s/comments/%s/_/%s' % (self.subreddit, self.post_id.replace('t3_',''), self.id)
+			return 'https://reddit.com/r/%s/comments/%s/_/%s' % (self.subreddit, self.post_id.replace('t3_',''), self.id)
 		else:
-			return 'http://reddit.com/comments/%s/_/%s' % (self.post_id.replace('t3_',''), self.id)
+			return 'https://reddit.com/comments/%s/_/%s' % (self.post_id.replace('t3_',''), self.id)
 
 class Message(Child,object):
 	def __init__(self, json=None, modhash=''):
@@ -214,7 +214,7 @@ class Message(Child,object):
 		self.subject = Reddit.asciify(json['subject'])
 		self.new     = json['new']
 	def permalink(self):
-		return 'http://reddit.com/message/messages/%s' % self.id
+		return 'https://reddit.com/message/messages/%s' % self.id
 	def has_mod_invite(self):
 		''' Checks if message contains a moderator invite '''
 		return (self.author == None or self.author == 'reddit') and \
@@ -230,7 +230,7 @@ class Message(Child,object):
 			'executed'    : 'you are now a moderator. welcome to the team!',
 			'renderstyle' : 'html'
 		}
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/accept_moderator_invite', d)
 		return (r != '')
 
 
@@ -278,7 +278,7 @@ class Reddit(object):
 				'api_type' : 'json'
 			}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/login/%s' % user, d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/login/%s' % user, d)
 		if 'WRONG_PASSWORD' in r:
 			raise Exception('invalid password')
 		if 'RATELIMIT' in r:
@@ -314,7 +314,7 @@ class Reddit(object):
 				Descriptive Exception if unable to load or parse page.
 		'''
 		if url.startswith('/'):
-			url = 'http://www.reddit.com%s' % url
+			url = 'https://www.reddit.com%s' % url
 		if not 'json' in url.lower():
 			if '?' in url:
 				url = url.replace('?', '.json?', 1)
@@ -385,7 +385,7 @@ class Reddit(object):
 		
 	@staticmethod
 	def get_user_info(user):
-		url = 'http://www.reddit.com/user/%s/about.json' % user
+		url = 'https://www.reddit.com/user/%s/about.json' % user
 		try:
 			Reddit.wait()
 			r = Reddit.httpy.get(url)
@@ -420,17 +420,17 @@ class Reddit(object):
 			'renderstyle' : 'html'
 		}
 		Reddit.wait()
-		r = Reddit.httpy.oldpost('http://www.reddit.com/api/accept_moderator_invite', d)
+		r = Reddit.httpy.oldpost('https://www.reddit.com/api/accept_moderator_invite', d)
 		if r == '':
 			raise Exception('empty response when accepting invite to %s with modhash %s' % (subreddit, modhash))
 	
 	@staticmethod
 	def get_modded_subreddits():
 		Reddit.wait()
-		r = Reddit.httpy.get('http://reddit.com/r/mod')
-		if not '<ul><a href="http://www.reddit.com/r/' in r:
+		r = Reddit.httpy.get('https://reddit.com/r/mod')
+		if not '<ul><a href="https://www.reddit.com/r/' in r:
 			raise Exception('unable to find moderated subreddits')
-		return Reddit.httpy.between(r, '<ul><a href="http://www.reddit.com/r/', '"')[0].split('+')
+		return Reddit.httpy.between(r, '<ul><a href="https://www.reddit.com/r/', '"')[0].split('+')
 
 	@staticmethod
 	def get_approved_submitters(subreddit):
@@ -439,7 +439,7 @@ class Reddit(object):
 			Requires: 'access' mod permissions, or for the sub to be private apparently
 		'''
 		Reddit.wait()
-		r = Reddit.httpy.get('http://www.reddit.com/r/%s/about/contributors.json' % subreddit)
+		r = Reddit.httpy.get('https://www.reddit.com/r/%s/about/contributors.json' % subreddit)
 		json = loads(r)
 		approved = []
 		for item in json['data']['children']:
@@ -452,7 +452,7 @@ class Reddit(object):
 			Returns list of moderators for a subreddit.
 		'''
 		Reddit.wait()
-		r = Reddit.httpy.get('http://www.reddit.com/r/%s/about/moderators.json' % subreddit)
+		r = Reddit.httpy.get('https://www.reddit.com/r/%s/about/moderators.json' % subreddit)
 		json = loads(r)
 		mods = []
 		for item in json['data']['children']:
